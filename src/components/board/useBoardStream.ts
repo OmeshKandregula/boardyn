@@ -10,10 +10,8 @@ import type { BoardEvent } from "@/lib/realtime";
  * is a little more work per event than shipping diffs, but it means there is
  * exactly one place where board state is assembled, and no client-side merge
  * logic to drift out of step with it.
- *
- * Events caused by this tab are ignored: it already applied them optimistically.
  */
-export function useBoardStream(boardId: string, currentUserId: string): void {
+export function useBoardStream(boardId: string): void {
   const router = useRouter();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -27,9 +25,13 @@ export function useBoardStream(boardId: string, currentUserId: string): void {
       } catch {
         return;
       }
-      if (event.actorId && event.actorId === currentUserId) return;
-
-      // A burst of edits from the other person should cost one refresh.
+      // Events are deliberately not filtered by actor. Filtering on user id
+      // looks right until the same person has the board open twice (laptop and
+      // phone, or two tabs), at which point their own edits never reach their
+      // other window. A refresh the tab did not need is cheap; a tab that
+      // silently stops updating is not.
+      //
+      // A burst of edits should still cost one refresh, hence the debounce.
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => router.refresh(), 150);
     });
@@ -41,5 +43,5 @@ export function useBoardStream(boardId: string, currentUserId: string): void {
       if (timer.current) clearTimeout(timer.current);
       source.close();
     };
-  }, [boardId, currentUserId, router]);
+  }, [boardId, router]);
 }

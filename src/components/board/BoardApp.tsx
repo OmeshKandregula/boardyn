@@ -55,7 +55,7 @@ export function BoardApp({
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  useBoardStream(bundle.board.id, currentUserId);
+  useBoardStream(bundle.board.id);
 
   // Server data is the source of truth; this copy exists so a drag can land
   // before the round trip finishes. Every server render replaces it.
