@@ -7,7 +7,8 @@ a moved block is a moved due date.
 
 Built because Trello has no calendar worth the name, Notion is a database that
 happens to draw boards, and every hosted option charges per seat for a team of
-two. MIT licensed. Bring your own Postgres.
+two. It is the board we run [Bulletyn](https://readbulletyn.com) on, spun out of
+that work and open-sourced on its own. MIT licensed. Bring your own Postgres.
 
 ```
 Board view          Table view         Calendar view       Gallery view
