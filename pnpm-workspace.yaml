@@ -1,0 +1,7 @@
+# esbuild and sharp ship native binaries that their install scripts fetch.
+# pnpm 11 blocks build scripts unless they are approved here, and a blocked
+# script fails "pnpm install --frozen-lockfile" outright, which is what CI runs.
+# (package.json carries the same list under "pnpm" for anyone still on pnpm 10.)
+allowBuilds:
+  esbuild: true
+  sharp: true
