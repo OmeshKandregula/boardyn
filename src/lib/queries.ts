@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import {
   activity,
@@ -308,10 +308,15 @@ export async function getCardDetail(cardId: string) {
   };
 }
 
-/** Cards due in a window, used by the digest and the "my week" rail. */
+/**
+ * Your dated cards around now: a week ahead, and a week back so something you
+ * missed does not silently drop off the list. Undated cards are deliberately
+ * absent; this rail answers "what is coming up", not "what do I own".
+ */
 export async function getUpcomingForUser(userId: string, days = 7) {
   const now = new Date();
   const until = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+  const since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   return db
     .select({
@@ -328,8 +333,8 @@ export async function getUpcomingForUser(userId: string, days = 7) {
       and(
         eq(cardAssignees.userId, userId),
         isNull(cards.archivedAt),
-        or(lte(cards.dueAt, until), isNull(cards.dueAt)),
-        gte(cards.dueAt, new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)),
+        lte(cards.dueAt, until),
+        gte(cards.dueAt, since),
       ),
     )
     .orderBy(asc(cards.dueAt))
