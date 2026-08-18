@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/*
+ * One dark surface scale plus one accent. A board is dense with user colour
+ * already (option chips, avatars, calendar blocks); the chrome around it stays
+ * quiet so those reads as signal.
+ */
+@theme {
+  --color-canvas: oklch(0.17 0.012 265);
+  --color-surface: oklch(0.21 0.014 265);
+  --color-surface-raised: oklch(0.25 0.016 265);
+  --color-line: oklch(0.32 0.018 265);
+  --color-ink: oklch(0.95 0.005 265);
+  --color-ink-muted: oklch(0.72 0.012 265);
+  --color-ink-faint: oklch(0.58 0.012 265);
+  --color-accent: oklch(0.68 0.16 258);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Board columns scroll horizontally; a chunky scrollbar eats a card row. */
+.thin-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 999px;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@layer components {
+  /* Tailwind v4 will not let one component class @apply another, so the shared
+     button shape is repeated rather than composed. */
+  .btn,
+  .btn-primary,
+  .btn-ghost,
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2
+           text-sm font-medium transition-colors disabled:opacity-50
+           disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply bg-indigo-600 text-white hover:bg-indigo-500;
+  }
+  .btn-ghost {
+    @apply text-[color:var(--color-ink-muted)] hover:bg-white/5
+           hover:text-[color:var(--color-ink)];
+  }
+  .btn-outline {
+    @apply border border-[color:var(--color-line)]
+           text-[color:var(--color-ink-muted)] hover:bg-white/5
+           hover:text-[color:var(--color-ink)];
+  }
+  .field {
+    @apply w-full rounded-lg border border-[color:var(--color-line)]
+           bg-[color:var(--color-canvas)] px-3 py-2 text-sm
+           text-[color:var(--color-ink)] outline-none
+           placeholder:text-[color:var(--color-ink-faint)]
+           focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20;
+  }
+  .panel {
+    @apply rounded-xl border border-[color:var(--color-line)]
+           bg-[color:var(--color-surface)];
+  }
+}
+
+/* The card being dragged should not also be the card sitting in the column. */
+.dragging-source {
+  opacity: 0.35;
+}
