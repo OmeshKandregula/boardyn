@@ -1,3 +1,8 @@
+# Two ways to use this file:
+#
+#   docker compose up        the whole thing, app included, on :3000
+#   docker compose up db     just Postgres, for running `pnpm dev` against
+#
 services:
   db:
     image: postgres:16-alpine
@@ -6,6 +11,8 @@ services:
       POSTGRES_PASSWORD: boardyn
       POSTGRES_DB: boardyn
     ports:
+      # Published so `pnpm dev` on the host can reach it. Harmless on a laptop;
+      # drop this line on a shared machine.
       - "5432:5432"
     volumes:
       - boardyn-pgdata:/var/lib/postgresql/data
@@ -14,6 +21,29 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Waiting for healthy, not just started, so the migration on boot does not
+    # race Postgres finishing its own first-run initialisation.
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://boardyn:boardyn@db:5432/boardyn
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      # Optional. Without it the container generates one at boot and everyone
+      # is signed out on restart. Set it in .env for anything you intend to keep.
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      # Optional, enables the Google Calendar integration.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      CRON_SECRET: ${CRON_SECRET:-}
+    ports:
+      - "${PORT:-3000}:3000"
+    restart: unless-stopped
 
 volumes:
   boardyn-pgdata:

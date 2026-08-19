@@ -37,39 +37,58 @@ Board view          Table view         Calendar view       Gallery view
 
 ## Running it
 
-Requires Node 20+ and a Postgres 14+ database.
+With Docker, the whole thing is one command:
 
 ```bash
 git clone <your fork> boardyn && cd boardyn
-pnpm install
+docker compose up
+```
+
+That starts Postgres, waits for it to be healthy, applies migrations, and
+serves the app on http://localhost:3000. Create an account and you land in
+your own workspace.
+
+Set `AUTH_SECRET` in a `.env` file before you start anything you intend to
+keep. Without one the container generates a fresh secret per boot, which signs
+everyone out on every restart:
+
+```bash
 cp .env.example .env
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Fill in `.env`:
+### Without Docker
+
+Requires Node 22+ and a Postgres 14+ database. Point `DATABASE_URL` at any
+Postgres you have (a local install, Neon, Supabase, RDS), or run just the
+database from compose with `docker compose up db`.
 
 ```bash
-DATABASE_URL=postgres://boardyn:boardyn@localhost:5432/boardyn
-AUTH_SECRET=<node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
-APP_URL=http://localhost:3000
-```
-
-Postgres, if you have Docker:
-
-```bash
-docker compose up -d
-```
-
-Otherwise point `DATABASE_URL` at any Postgres you already have (a local
-install, Neon, Supabase, RDS). Then:
-
-```bash
+pnpm install
+cp .env.example .env      # fill in DATABASE_URL and AUTH_SECRET
 pnpm db:migrate
 pnpm dev
 ```
 
-Open http://localhost:3000, create an account, and you land in your own
-workspace. `pnpm db:seed` fills it with a sample board if you want something to
-look at first.
+`pnpm db:seed` fills your workspace with a sample board if you want something
+to look at first.
+
+### Deploying it
+
+The image is self-contained and runs migrations on boot, so a deploy is a
+matter of pointing it at a Postgres and setting three variables:
+
+```bash
+docker build -t boardyn .
+docker run -p 3000:3000 \
+  -e DATABASE_URL=postgres://user:pass@host:5432/boardyn \
+  -e AUTH_SECRET=your-long-random-string \
+  -e APP_URL=https://boards.yourdomain.com \
+  boardyn
+```
+
+`/api/health` returns 200 only when the app can reach the database, which is
+what the container healthcheck and most load balancers want.
 
 To invite your co-founder: Settings, enter their email, send them the link that
 appears. It works once, for that address.
@@ -153,7 +172,9 @@ not delete, is the destructive path.
 
 ## Contributing
 
-Issues and pull requests welcome. `pnpm typecheck` and `pnpm build` should pass.
+Issues and pull requests welcome. `pnpm typecheck`, `pnpm test` and `pnpm build`
+should pass. CI also builds the Docker image, so changes that break the
+container are caught before merge.
 
 ## Licence
 

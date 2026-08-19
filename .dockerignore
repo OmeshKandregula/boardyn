@@ -1,0 +1,14 @@
+# Anything here would either bloat the build context or leak into the image.
+node_modules
+.next
+dist
+.git
+.github
+.env
+.env.local
+*.tsbuildinfo
+next-env.d.ts
+docs
+README.md
+LICENSE
+**/*.test.ts

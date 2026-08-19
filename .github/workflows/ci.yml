@@ -31,3 +31,18 @@ jobs:
           # The build only needs these to exist; no database is contacted.
           DATABASE_URL: postgres://boardyn:boardyn@localhost:5432/boardyn
           AUTH_SECRET: ci-build-only
+
+  # Builds the actual image. Without this the Dockerfile silently rots: the
+  # first version of it copied a public/ directory this project does not have,
+  # which nothing but a real build would have caught.
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
