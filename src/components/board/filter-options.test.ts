@@ -25,7 +25,7 @@ const STATUS: BoardProperty = {
 const MEMBERS: Member[] = [
   {
     id: "usr_1",
-    name: "Omesh",
+    name: "Alex",
     email: "o@example.test",
     avatarColor: "indigo",
     role: "owner",
@@ -53,7 +53,7 @@ describe("filterTargets", () => {
 
   it("offers members as the assignee values", () => {
     const assignee = filterTargets([], MEMBERS).find((t) => t.id === "assignee");
-    expect(assignee?.options).toEqual([{ id: "usr_1", name: "Omesh" }]);
+    expect(assignee?.options).toEqual([{ id: "usr_1", name: "Alex" }]);
   });
 });
 

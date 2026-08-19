@@ -11,12 +11,12 @@ describe("extractActionItems", () => {
 We talked about pricing and the launch.
 
 ## Action items
-- Omesh to draft the pricing page
-- Priya to email the design agency
+- Alex to draft the pricing page
+- Sam to email the design agency
 `;
     expect(texts(summary)).toEqual([
-      "Omesh to draft the pricing page",
-      "Priya to email the design agency",
+      "Alex to draft the pricing page",
+      "Sam to email the design agency",
     ]);
   });
 
@@ -42,9 +42,9 @@ We talked about pricing and the launch.
     // Granola often files actions per person underneath the section.
     const summary = `
 ## Action items
-### Omesh
+### Alex
 - Draft the pricing page
-### Priya
+### Sam
 - Email the agency
 `;
     expect(texts(summary)).toEqual([
@@ -70,11 +70,11 @@ We talked about pricing and the launch.
   it("picks up commitments phrased as such outside any heading", () => {
     const summary = `
 ## Discussion
-- Omesh will send the investor update on Friday
+- Alex will send the investor update on Friday
 - Pricing felt high to both of us
 `;
     expect(texts(summary)).toEqual([
-      "Omesh will send the investor update on Friday",
+      "Alex will send the investor update on Friday",
     ]);
   });
 
@@ -94,9 +94,9 @@ We talked about pricing and the launch.
   it("strips markdown so a card title is not full of syntax", () => {
     const summary = `
 ## Action items
-- **Omesh** to review the [pricing doc](https://example.com/doc)
+- **Alex** to review the [pricing doc](https://example.com/doc)
 `;
-    expect(texts(summary)).toEqual(["Omesh to review the pricing doc"]);
+    expect(texts(summary)).toEqual(["Alex to review the pricing doc"]);
   });
 
   it("does not repeat an item that appears twice", () => {
@@ -149,7 +149,7 @@ We talked about pricing and the launch.
 
   it("records where each item came from", () => {
     const items = extractActionItems(
-      "## Action items\n- Send the deck\n\n## Notes\n- [ ] Book the venue\n- Priya will call the bank",
+      "## Action items\n- Send the deck\n\n## Notes\n- [ ] Book the venue\n- Sam will call the bank",
     );
     expect(items.map((i) => i.source)).toEqual(["heading", "checkbox", "phrase"]);
   });

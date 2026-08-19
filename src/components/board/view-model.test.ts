@@ -28,8 +28,8 @@ const STATUS: BoardProperty = {
 const MEMBERS: Member[] = [
   {
     id: "usr_1",
-    name: "Omesh Kandregula",
-    email: "omesh@example.test",
+    name: "Alex Rivera",
+    email: "alex@example.test",
     avatarColor: "indigo",
     role: "owner",
     hasCalendar: false,
@@ -236,7 +236,7 @@ describe("renderValue", () => {
 
   it("renders a person by name", () => {
     const person: BoardProperty = { ...STATUS, id: "prp_owner", type: "person", options: [] };
-    expect(renderValue(person, ["usr_1"], MEMBERS)).toBe("Omesh Kandregula");
+    expect(renderValue(person, ["usr_1"], MEMBERS)).toBe("Alex Rivera");
   });
 
   it("renders an empty value as an empty string", () => {

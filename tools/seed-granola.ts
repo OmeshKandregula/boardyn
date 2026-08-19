@@ -25,8 +25,8 @@ const SUMMARY_A = `## Summary
 Went through pricing and what to do before launch.
 
 ## Action items
-- Omesh to draft the pricing page copy
-- Priya to email the design agency about the launch assets
+- Alex to draft the pricing page copy
+- Sam to email the design agency about the launch assets
 - Both of us to review the onboarding flow before Friday
 
 ## Notes
@@ -87,7 +87,7 @@ async function main() {
       hoursAgo: 26,
       attendees: [
         { name: owner.name, email: owner.email },
-        ...(teammate ? [{ name: "Priya Raman", email: teammate }] : []),
+        ...(teammate ? [{ name: "Sam Okafor", email: teammate }] : []),
       ],
       shared: Boolean(teammate),
     },
@@ -97,7 +97,7 @@ async function main() {
       hoursAgo: 50,
       attendees: [
         { name: owner.name, email: owner.email },
-        ...(teammate ? [{ name: "Priya Raman", email: teammate }] : []),
+        ...(teammate ? [{ name: "Sam Okafor", email: teammate }] : []),
       ],
       shared: Boolean(teammate),
     },
@@ -129,7 +129,7 @@ async function main() {
       endedAt: new Date(startedAt.getTime() + 30 * 60_000),
       attendees: sample.attendees,
       summary: sample.summary,
-      transcript: "Omesh: Shall we start\nPriya: Go ahead",
+      transcript: "Alex: Shall we start\nSam: Go ahead",
       sharedWithWorkspace: sample.shared,
       granolaUpdatedAt: startedAt,
     });

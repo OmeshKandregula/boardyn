@@ -12,25 +12,25 @@ import {
 const note = (overrides: Partial<GranolaNote> = {}): GranolaNote => ({
   id: "not_abcdefghijklmn",
   title: "Weekly founder sync",
-  owner: { name: "Omesh", email: "omesh@example.test" },
+  owner: { name: "Alex", email: "alex@example.test" },
   created_at: "2026-08-19T09:05:00.000Z",
   ...overrides,
 });
 
 describe("shouldShareWithWorkspace", () => {
-  const team = ["omesh@example.test", "priya@example.test"];
+  const team = ["alex@example.test", "sam@example.test"];
 
   it("shares a meeting two workspace members attended", () => {
     const attendees = [
-      { name: "Omesh", email: "omesh@example.test" },
-      { name: "Priya", email: "priya@example.test" },
+      { name: "Alex", email: "alex@example.test" },
+      { name: "Sam", email: "sam@example.test" },
     ];
     expect(shouldShareWithWorkspace(attendees, team)).toBe(true);
   });
 
   it("keeps a solo note private", () => {
     expect(
-      shouldShareWithWorkspace([{ name: "Omesh", email: "omesh@example.test" }], team),
+      shouldShareWithWorkspace([{ name: "Alex", email: "alex@example.test" }], team),
     ).toBe(false);
   });
 
@@ -39,7 +39,7 @@ describe("shouldShareWithWorkspace", () => {
     // conversation with another company. One member plus a stranger is not a
     // meeting the team had.
     const attendees = [
-      { name: "Omesh", email: "omesh@example.test" },
+      { name: "Alex", email: "alex@example.test" },
       { name: "A candidate", email: "candidate@elsewhere.test" },
     ];
     expect(shouldShareWithWorkspace(attendees, team)).toBe(false);
@@ -47,8 +47,8 @@ describe("shouldShareWithWorkspace", () => {
 
   it("shares when the team plus outsiders were present", () => {
     const attendees = [
-      { name: "Omesh", email: "omesh@example.test" },
-      { name: "Priya", email: "priya@example.test" },
+      { name: "Alex", email: "alex@example.test" },
+      { name: "Sam", email: "sam@example.test" },
       { name: "An investor", email: "investor@elsewhere.test" },
     ];
     expect(shouldShareWithWorkspace(attendees, team)).toBe(true);
@@ -56,8 +56,8 @@ describe("shouldShareWithWorkspace", () => {
 
   it("ignores case in email addresses", () => {
     const attendees = [
-      { name: "Omesh", email: "Omesh@Example.Test" },
-      { name: "Priya", email: "PRIYA@example.test" },
+      { name: "Alex", email: "Alex@Example.Test" },
+      { name: "Sam", email: "SAM@example.test" },
     ];
     expect(shouldShareWithWorkspace(attendees, team)).toBe(true);
   });
@@ -66,28 +66,28 @@ describe("shouldShareWithWorkspace", () => {
     // Duplicated across the attendee list and the calendar invitees, one
     // person must not look like two and share a private note.
     const attendees = [
-      { name: "Omesh", email: "omesh@example.test" },
-      { name: "Omesh K", email: "omesh@example.test" },
+      { name: "Alex", email: "alex@example.test" },
+      { name: "Alex K", email: "alex@example.test" },
     ];
     expect(shouldShareWithWorkspace(attendees, team)).toBe(false);
   });
 
   it("does not match on names, only addresses", () => {
-    // A name is not an identity. Two people called Omesh must not be able to
+    // A name is not an identity. Two people called Alex must not be able to
     // open each other's notes.
     const attendees = [
-      { name: "Omesh", email: null },
-      { name: "Priya", email: null },
+      { name: "Alex", email: null },
+      { name: "Sam", email: null },
     ];
     expect(shouldShareWithWorkspace(attendees, team)).toBe(false);
   });
 
   it("keeps everything private in a workspace of one", () => {
     const attendees = [
-      { name: "Omesh", email: "omesh@example.test" },
+      { name: "Alex", email: "alex@example.test" },
       { name: "Someone", email: "someone@elsewhere.test" },
     ];
-    expect(shouldShareWithWorkspace(attendees, ["omesh@example.test"])).toBe(false);
+    expect(shouldShareWithWorkspace(attendees, ["alex@example.test"])).toBe(false);
   });
 });
 
@@ -95,32 +95,32 @@ describe("normaliseAttendees", () => {
   it("merges the attendee list, the calendar invitees and the owner", () => {
     const people = normaliseAttendees(
       note({
-        attendees: [{ name: "Priya", email: "priya@example.test" }],
+        attendees: [{ name: "Sam", email: "sam@example.test" }],
         calendar_event: {
           invitees: [{ name: "Investor", email: "investor@elsewhere.test" }],
-          organiser: { name: "Omesh", email: "omesh@example.test" },
+          organiser: { name: "Alex", email: "alex@example.test" },
         },
       }),
     );
     expect(people.map((p) => p.email).sort()).toEqual([
+      "alex@example.test",
       "investor@elsewhere.test",
-      "omesh@example.test",
-      "priya@example.test",
+      "sam@example.test",
     ]);
   });
 
   it("dedupes one person appearing in several places", () => {
     const people = normaliseAttendees(
       note({
-        attendees: [{ name: null, email: "omesh@example.test" }],
+        attendees: [{ name: null, email: "alex@example.test" }],
         calendar_event: {
-          organiser: { name: "Omesh Kandregula", email: "omesh@example.test" },
+          organiser: { name: "Alex Rivera", email: "alex@example.test" },
         },
       }),
     );
     expect(people).toHaveLength(1);
     // The better name wins over the empty one.
-    expect(people[0].name).toBe("Omesh Kandregula");
+    expect(people[0].name).toBe("Alex Rivera");
   });
 
   it("accepts the American spelling of organiser", () => {
@@ -197,10 +197,10 @@ describe("flattenTranscript", () => {
   it("labels lines with the speaker", () => {
     expect(
       flattenTranscript([
-        { speaker: { name: "Omesh" }, text: "Shall we ship it" },
-        { speaker: { name: "Priya" }, text: "After the tests" },
+        { speaker: { name: "Alex" }, text: "Shall we ship it" },
+        { speaker: { name: "Sam" }, text: "After the tests" },
       ]),
-    ).toBe("Omesh: Shall we ship it\nPriya: After the tests");
+    ).toBe("Alex: Shall we ship it\nSam: After the tests");
   });
 
   it("keeps unattributed lines", () => {
