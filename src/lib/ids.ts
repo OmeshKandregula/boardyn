@@ -26,6 +26,9 @@ export const ids = {
   activity: () => newId("act"),
   google: () => newId("gac"),
   event: () => newId("evt"),
+  granola: () => newId("gra"),
+  meeting: () => newId("mtg"),
+  actionItem: () => newId("ait"),
 };
 
 /** A random token for links that are handed out (invites, session cookies). */

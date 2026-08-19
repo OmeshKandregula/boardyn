@@ -417,6 +417,129 @@ export const rateLimitHits = pgTable(
   ],
 );
 
+/* -------------------------------------------------------------- granola   */
+
+/**
+ * One Granola API key per user. Keys are issued from a Granola workspace and
+ * are read-only against their API, but they read *everything* that person has
+ * recorded, which is why the value is encrypted and never shown again after it
+ * is saved.
+ */
+export const granolaAccounts = pgTable(
+  "granola_accounts",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /**
+     * Which workspace synced notes land in. Named rather than inferred: a
+     * person can belong to several, and guessing at the first one is how a
+     * meeting ends up filed with the wrong team.
+     */
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    /** Encrypted; see lib/secrets.ts. */
+    apiKey: text("api_key").notNull(),
+    /** Last four characters, so settings can say which key is configured. */
+    keyHint: text("key_hint").notNull(),
+    syncEnabled: boolean("sync_enabled").notNull().default(true),
+    /** Opaque cursor from Granola's note list, so a poll fetches only what is new. */
+    cursor: text("cursor"),
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+    lastSyncError: text("last_sync_error"),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("granola_accounts_user_idx").on(t.userId)],
+);
+
+export type MeetingAttendee = { name: string | null; email: string | null };
+
+/**
+ * A meeting note pulled from Granola.
+ *
+ * Rows belong to a workspace but are only visible to other members when
+ * `sharedWithWorkspace` is true. That is not the default for a good reason:
+ * Granola records everything its owner attends, including one-to-ones,
+ * interviews and calls with other companies. The poller shares a note
+ * automatically only when two or more workspace members were in the room,
+ * which is the closest automatic rule to "a meeting the team had"; anything
+ * else stays private to the person whose key fetched it until they say
+ * otherwise.
+ */
+export const meetings = pgTable(
+  "meetings",
+  {
+    id: id(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    /** Whose key fetched it. Not necessarily the only attendee. */
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    granolaNoteId: text("granola_note_id").notNull(),
+    title: text("title").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    attendees: jsonb("attendees").$type<MeetingAttendee[]>().notNull().default([]),
+    /** The AI summary, as markdown. */
+    summary: text("summary"),
+    transcript: text("transcript"),
+    /**
+     * Granola's own updated_at. A poll compares against this and skips notes
+     * that have not changed, which is what keeps a five-minute cron from
+     * re-fetching every note anyone has ever recorded.
+     */
+    granolaUpdatedAt: timestamp("granola_updated_at", { withTimezone: true }),
+    webUrl: text("web_url"),
+    sharedWithWorkspace: boolean("shared_with_workspace").notNull().default(false),
+    /** Set when a person shares or unshares by hand, so the poller stops deciding. */
+    shareOverriddenAt: timestamp("share_overridden_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    // One row per note per owner: two attendees with their own keys fetch the
+    // same Granola note, and each keeps their own copy rather than fighting
+    // over one.
+    uniqueIndex("meetings_note_owner_idx").on(t.granolaNoteId, t.ownerId),
+    index("meetings_workspace_idx").on(t.workspaceId, t.startedAt),
+  ],
+);
+
+/**
+ * Something the meeting decided somebody would do.
+ *
+ * Extracted from the summary rather than invented, and held as a suggestion
+ * until a person accepts it. Auto-creating cards from a transcript is how a
+ * board fills with items nobody wrote and nobody trusts.
+ */
+export const meetingActionItems = pgTable(
+  "meeting_action_items",
+  {
+    id: id(),
+    meetingId: text("meeting_id")
+      .notNull()
+      .references(() => meetings.id, { onDelete: "cascade" }),
+    text: text("text").notNull(),
+    /** Stable hash of the text, so re-syncing a note does not duplicate items. */
+    fingerprint: text("fingerprint").notNull(),
+    status: text("status").notNull().default("suggested"), // suggested|accepted|dismissed
+    /** Set once accepted onto a board. */
+    cardId: text("card_id").references(() => cards.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("meeting_action_items_fingerprint_idx").on(
+      t.meetingId,
+      t.fingerprint,
+    ),
+    index("meeting_action_items_status_idx").on(t.meetingId, t.status),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
 export type Board = typeof boards.$inferSelect;
 export type BoardProperty = typeof boardProperties.$inferSelect;
@@ -426,3 +549,6 @@ export type CardValue = typeof cardValues.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type GoogleAccount = typeof googleAccounts.$inferSelect;
 export type ExternalEvent = typeof externalEvents.$inferSelect;
+export type GranolaAccount = typeof granolaAccounts.$inferSelect;
+export type Meeting = typeof meetings.$inferSelect;
+export type MeetingActionItem = typeof meetingActionItems.$inferSelect;
