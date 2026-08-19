@@ -420,6 +420,7 @@ export async function updateView(
     sort?: unknown;
     visibleProperties?: string[];
     showExternalEvents?: boolean;
+    hiddenCalendars?: string[];
   },
 ): Promise<void> {
   const [view] = await db.select().from(views).where(eq(views.id, viewId)).limit(1);
@@ -438,6 +439,7 @@ export async function updateView(
       sort: patch.sort === undefined ? view.sort : (patch.sort as typeof view.sort),
       visibleProperties: patch.visibleProperties ?? view.visibleProperties,
       showExternalEvents: patch.showExternalEvents ?? view.showExternalEvents,
+      hiddenCalendars: patch.hiddenCalendars ?? view.hiddenCalendars,
     })
     .where(eq(views.id, viewId));
 

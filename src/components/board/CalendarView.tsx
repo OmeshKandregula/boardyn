@@ -23,11 +23,13 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
-import { AVATAR_CLASSES, type ColorName } from "@/lib/constants";
+import { COLOR_CLASSES, type ColorName } from "@/lib/constants";
+import { assignCalendarColors } from "@/lib/calendar-colors";
 import { localDateOnly, moveToDay, toDateOnly } from "@/lib/dates";
 import type { View } from "@/db/schema";
 import type { BoardBundle, CardData, ExternalEventData } from "@/lib/queries";
 import type { CardMutations } from "./BoardApp";
+import { CalendarLegend } from "./CalendarLegend";
 
 /**
  * A month grid over the same cards, with everyone's Google Calendar drawn
@@ -42,11 +44,13 @@ export function CalendarView({
   view,
   bundle,
   mutations,
+  currentUserId,
 }: {
   cards: CardData[];
   view: View;
   bundle: BoardBundle;
   mutations: CardMutations;
+  currentUserId: string;
 }) {
   const [anchor, setAnchor] = useState(() => new Date());
   const sensors = useSensors(
@@ -68,7 +72,26 @@ export function CalendarView({
   const scheduled = cards.filter((card) => card.dueAt);
   const unscheduled = cards.filter((card) => !card.dueAt);
 
-  const events = view.showExternalEvents ? bundle.externalEvents : [];
+  // One colour per person, stable across sessions, and never two people
+  // sharing one. See lib/calendar-colors.ts for why that matters more than it
+  // sounds like it should.
+  const colors = useMemo(
+    () => assignCalendarColors(bundle.members),
+    [bundle.members],
+  );
+
+  const hidden = useMemo(
+    () => new Set(view.hiddenCalendars),
+    [view.hiddenCalendars],
+  );
+
+  const events = useMemo(
+    () =>
+      view.showExternalEvents
+        ? bundle.externalEvents.filter((event) => !hidden.has(event.ownerId))
+        : [],
+    [bundle.externalEvents, hidden, view.showExternalEvents],
+  );
 
   function handleDragEnd(event: DragEndEvent) {
     const dayIso = event.over?.id ? String(event.over.id) : null;
@@ -91,7 +114,18 @@ export function CalendarView({
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="flex h-full min-h-0 flex-col">
+      <div className="flex h-full min-h-0">
+        {bundle.members.length > 0 ? (
+          <CalendarLegend
+            view={view}
+            members={bundle.members}
+            colors={colors}
+            events={bundle.externalEvents}
+            currentUserId={currentUserId}
+          />
+        ) : null}
+
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-2 px-4 py-3">
           <button
             className="btn-outline px-2 py-1 text-xs"
@@ -144,10 +178,12 @@ export function CalendarView({
                 (card) => toDateOnly(card.dueAt!) === localDateOnly(day),
               )}
               events={events.filter((event) => coversDay(event, day))}
+              colors={colors}
               bundle={bundle}
               mutations={mutations}
             />
           ))}
+          </div>
         </div>
       </div>
     </DndContext>
@@ -169,6 +205,7 @@ function DayCell({
   inMonth,
   cards,
   events,
+  colors,
   bundle,
   mutations,
 }: {
@@ -176,6 +213,7 @@ function DayCell({
   inMonth: boolean;
   cards: CardData[];
   events: ExternalEventData[];
+  colors: Map<string, ColorName>;
   bundle: BoardBundle;
   mutations: CardMutations;
 }) {
@@ -208,25 +246,23 @@ function DayCell({
         </button>
       </div>
 
-      {events.map((event) => (
-        <div
-          key={event.id}
-          title={`${event.ownerName}: ${event.title}`}
-          className="mb-0.5 truncate rounded px-1 py-0.5 text-[10px] text-white/85"
-          style={{ opacity: 0.85 }}
-        >
-          <span
-            className={`mr-1 inline-block h-1.5 w-1.5 rounded-full align-middle ${
-              AVATAR_CLASSES[event.ownerColor as ColorName] ?? AVATAR_CLASSES.slate
-            }`}
-            aria-hidden
-          />
-          <span className="align-middle text-[color:var(--color-ink-faint)]">
+      {events.map((event) => {
+        const classes =
+          COLOR_CLASSES[colors.get(event.ownerId) ?? "slate"] ??
+          COLOR_CLASSES.slate;
+        return (
+          <div
+            key={event.id}
+            // Owner first: on a shared calendar, whose block it is matters
+            // before what it is called.
+            title={`${event.ownerName}: ${event.title}`}
+            className={`mb-0.5 truncate rounded px-1 py-0.5 text-[10px] ring-1 ring-inset ${classes.chip}`}
+          >
             {event.allDay ? "" : `${format(new Date(event.startAt), "HH:mm")} `}
             {event.title}
-          </span>
-        </div>
-      ))}
+          </div>
+        );
+      })}
 
       {cards.map((card) => (
         <CalendarCard key={card.id} card={card} onOpen={() => mutations.open(card.id)} />

@@ -159,23 +159,6 @@ export function ViewBar({
             </label>
           ) : null}
 
-          {view.type === "calendar" && bundle.externalEvents.length > 0 ? (
-            <label className="flex items-center gap-1.5 text-xs text-[color:var(--color-ink-muted)]">
-              <input
-                type="checkbox"
-                checked={view.showExternalEvents}
-                onChange={(event) =>
-                  startTransition(() =>
-                    updateView(view.id, {
-                      showExternalEvents: event.target.checked,
-                    }),
-                  )
-                }
-              />
-              Google Calendar
-            </label>
-          ) : null}
-
           <button
             onClick={() => setArchiveOpen(true)}
             className="btn-ghost px-2 py-1 text-xs"

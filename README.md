@@ -31,8 +31,9 @@ changing what the board groups by is a dropdown rather than a data migration.
         <img src="docs/screenshots/calendar.png" alt="Calendar view: a month grid with cards on their due dates" />
       </a>
       <p><strong>Calendar.</strong> Drag a card to another day to change its due
-      date. Connected Google Calendars draw behind the cards, so you can see
-      where there is actually room.</p>
+      date. Team calendars draw behind the cards, one colour per person and a
+      switch each, so the answer to "when are we both free" is on screen rather
+      than in a thread.</p>
     </td>
   </tr>
   <tr>
@@ -75,9 +76,12 @@ changing what the board groups by is a dropdown rather than a data migration.
   move it, space to drop, escape to cancel, enter to open. Screen readers are
   told which column the card is over.
 - **Google Calendar, two ways.** Assigned cards with dates appear on your
-  calendar; moving the event moves the card. Everyone's events draw behind the
-  calendar view so you can see where there is room. (Written but not yet
-  verified against Google's API: see the note below.)
+  calendar; moving the event moves the card. (Written but not yet verified
+  against Google's API: see the note below.)
+- **Everyone's diary on one grid.** The calendar view lists the team down the
+  side, one colour each, with a switch each. Turn people on to find the gap you
+  can all make, off when their day is noise. Colours are stable, so after a day
+  you stop reading the legend.
 
 ## Running it
 

@@ -1,0 +1,1 @@
+ALTER TABLE "views" ADD COLUMN "hidden_calendars" jsonb DEFAULT '[]'::jsonb NOT NULL;

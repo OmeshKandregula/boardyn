@@ -207,6 +207,16 @@ export const views = pgTable(
       .default([]),
     // Calendar view only: overlay members' Google calendars behind the cards.
     showExternalEvents: boolean("show_external_events").notNull().default(true),
+    /**
+     * Whose calendars are switched off in this view, by user id. Stored as the
+     * exclusions rather than the inclusions so somebody joining the workspace
+     * shows up by default instead of being invisible until each view is
+     * updated to know about them.
+     */
+    hiddenCalendars: jsonb("hidden_calendars")
+      .$type<string[]>()
+      .notNull()
+      .default([]),
     position: doublePrecision("position").notNull().default(1000),
     createdAt: createdAt(),
   },

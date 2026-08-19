@@ -24,6 +24,8 @@ export type Member = {
   email: string;
   avatarColor: string;
   role: string;
+  /** Whether this person has connected a Google Calendar to this instance. */
+  hasCalendar: boolean;
 };
 
 export type CardData = {
@@ -99,12 +101,20 @@ export async function getWorkspaceMembers(
       email: users.email,
       avatarColor: users.avatarColor,
       role: workspaceMembers.role,
+      googleAccountId: googleAccounts.id,
     })
     .from(workspaceMembers)
     .innerJoin(users, eq(users.id, workspaceMembers.userId))
+    // Left join: a member without a connected calendar is still a member, and
+    // the calendar legend needs to say so rather than omitting them.
+    .leftJoin(googleAccounts, eq(googleAccounts.userId, users.id))
     .where(eq(workspaceMembers.workspaceId, workspaceId))
     .orderBy(asc(users.name));
-  return rows;
+
+  return rows.map(({ googleAccountId, ...member }) => ({
+    ...member,
+    hasCalendar: googleAccountId != null,
+  }));
 }
 
 /**

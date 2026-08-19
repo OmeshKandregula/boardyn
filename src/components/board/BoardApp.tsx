@@ -234,6 +234,7 @@ export function BoardApp({
             view={view}
             bundle={bundle}
             mutations={mutations}
+            currentUserId={currentUserId}
           />
         ) : null}
         {view.type === "gallery" ? (

@@ -29,6 +29,7 @@ const MEMBERS: Member[] = [
     email: "o@example.test",
     avatarColor: "indigo",
     role: "owner",
+    hasCalendar: false,
   },
 ];
 
@@ -153,6 +154,7 @@ describe("the builder and the evaluator agree", () => {
     sort: null,
     visibleProperties: [],
     showExternalEvents: true,
+    hiddenCalendars: [],
     position: 1000,
     createdAt: new Date(),
   });

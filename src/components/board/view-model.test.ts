@@ -32,6 +32,7 @@ const MEMBERS: Member[] = [
     email: "omesh@example.test",
     avatarColor: "indigo",
     role: "owner",
+    hasCalendar: false,
   },
 ];
 
@@ -64,6 +65,7 @@ function view(overrides: Partial<View> = {}): View {
     sort: null,
     visibleProperties: [],
     showExternalEvents: true,
+    hiddenCalendars: [],
     position: 1000,
     createdAt: new Date(),
     ...overrides,
