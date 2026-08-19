@@ -15,7 +15,11 @@ import {
   googleConfigured,
   type GoogleEvent,
 } from "./client";
-import { CARD_MARKER } from "./push";
+import {
+  CARD_MARKER,
+  cardDatesFromWindow,
+  parseEventWindow,
+} from "./calendar-mapping";
 
 /** How much of the calendar is worth mirroring for a planning board. */
 const WINDOW_PAST_DAYS = 30;
@@ -128,7 +132,7 @@ export async function syncAccount(account: GoogleAccount): Promise<SyncResult> {
         continue;
       }
 
-      const parsed = parseWindow(event);
+      const parsed = parseEventWindow(event);
       if (!parsed) continue;
 
       await db
@@ -207,25 +211,20 @@ async function applyEventToCard(
     return null;
   }
 
-  const parsed = parseWindow(event);
+  const parsed = parseEventWindow(event);
   if (!parsed) return null;
 
   const sameStart = card.startAt?.getTime() === parsed.start.getTime();
   const sameDue = card.dueAt?.getTime() === parsed.end.getTime();
   if (sameStart && sameDue && card.allDay === parsed.allDay) return null;
 
+  // The all-day end date Google returns is exclusive; cardDatesFromWindow
+  // converts it back to the last day the work is actually due, so the board
+  // and the calendar agree about which day a task lands on.
+  const dates = cardDatesFromWindow(parsed);
   await db
     .update(cards)
-    .set({
-      startAt: parsed.start,
-      // The all-day end date Google returns is exclusive; store the last day
-      // the work is actually due so the board and the calendar agree.
-      dueAt: parsed.allDay
-        ? new Date(parsed.end.getTime() - 86_400_000)
-        : parsed.end,
-      allDay: parsed.allDay,
-      updatedAt: new Date(),
-    })
+    .set({ ...dates, updatedAt: new Date() })
     .where(eq(cards.id, cardId));
 
   // The hash no longer matches what is on the calendar; clearing it means the
@@ -241,21 +240,6 @@ async function applyEventToCard(
     );
 
   return card.boardId;
-}
-
-function parseWindow(
-  event: GoogleEvent,
-): { start: Date; end: Date; allDay: boolean } | null {
-  const startRaw = event.start?.dateTime ?? event.start?.date;
-  const endRaw = event.end?.dateTime ?? event.end?.date;
-  if (!startRaw || !endRaw) return null;
-
-  const allDay = Boolean(event.start?.date && !event.start?.dateTime);
-  const start = new Date(allDay ? `${startRaw}T00:00:00Z` : startRaw);
-  const end = new Date(allDay ? `${endRaw}T00:00:00Z` : endRaw);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
-
-  return { start, end, allDay };
 }
 
 /** Every connected account. Used by the poll endpoint. */

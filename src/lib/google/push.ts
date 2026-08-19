@@ -16,60 +16,16 @@ import {
   googleConfigured,
   type GoogleEvent,
 } from "./client";
+import {
+  buildEventPayload,
+  CARD_MARKER,
+  type EventPayload,
+} from "./calendar-mapping";
 
-/** Stamped on every event we create so the pull side can ignore its own work. */
-export const CARD_MARKER = "boardynCardId";
-
-type EventPayload = {
-  summary: string;
-  description?: string;
-  start: { date?: string; dateTime?: string };
-  end: { date?: string; dateTime?: string };
-  extendedProperties: { private: Record<string, string> };
-  source?: { title: string; url: string };
-};
+export { CARD_MARKER };
 
 function appUrl(): string {
   return process.env.APP_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
-}
-
-function isoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function buildPayload(card: Card, boardTitle: string): EventPayload {
-  const link = `${appUrl()}/b/${card.boardId}?card=${card.id}`;
-  const description = [card.description?.trim(), `Board: ${boardTitle}`, link]
-    .filter(Boolean)
-    .join("\n\n");
-
-  if (card.allDay) {
-    const day = card.startAt ?? card.dueAt!;
-    // Google treats an all-day end date as exclusive, so a one-day block ends
-    // on the following morning. Getting this wrong shows the task a day short.
-    const endSource = card.dueAt ?? card.startAt!;
-    const end = new Date(endSource);
-    end.setUTCDate(end.getUTCDate() + 1);
-    return {
-      summary: card.title,
-      description,
-      start: { date: isoDate(day) },
-      end: { date: isoDate(end) },
-      extendedProperties: { private: { [CARD_MARKER]: card.id } },
-      source: { title: "Boardyn", url: link },
-    };
-  }
-
-  const start = card.startAt ?? card.dueAt!;
-  const end = card.dueAt && card.startAt ? card.dueAt : new Date(start.getTime() + 30 * 60 * 1000);
-  return {
-    summary: card.title,
-    description,
-    start: { dateTime: start.toISOString() },
-    end: { dateTime: end.toISOString() },
-    extendedProperties: { private: { [CARD_MARKER]: card.id } },
-    source: { title: "Boardyn", url: link },
-  };
 }
 
 const hashOf = (payload: EventPayload) =>
@@ -126,7 +82,7 @@ export async function pushCardToCalendars(cardId: string): Promise<void> {
         )
     : [];
 
-  const payload = buildPayload(card, boardTitle);
+  const payload = buildEventPayload(card, boardTitle, appUrl());
   const hash = hashOf(payload);
   const targetIds = new Set(targets.map((t) => t.id));
 
