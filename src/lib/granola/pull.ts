@@ -204,11 +204,12 @@ async function upsertMeeting(
   const inserted = await db
     .insert(meetingActionItems)
     .values(
-      items.map((item) => ({
+      items.map((item, index) => ({
         id: ids.actionItem(),
         meetingId,
         text: item.text,
         fingerprint: item.fingerprint,
+        ordinal: index,
       })),
     )
     .onConflictDoNothing()

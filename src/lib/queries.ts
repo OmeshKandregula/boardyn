@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, or } from "drizzle-orm";
 import { db } from "@/db";
 import {
   activity,
@@ -10,6 +10,8 @@ import {
   comments,
   externalEvents,
   googleAccounts,
+  meetingActionItems,
+  meetings,
   users,
   views,
   workspaceMembers,
@@ -374,4 +376,154 @@ export async function getUpcomingForUser(userId: string, days = 7) {
     )
     .orderBy(asc(cards.dueAt))
     .limit(50);
+}
+
+/* ---------------------------------------------------------------- meetings */
+
+export type MeetingSummary = {
+  id: string;
+  title: string;
+  startedAt: string | null;
+  attendees: { name: string | null; email: string | null }[];
+  ownerId: string;
+  ownerName: string;
+  sharedWithWorkspace: boolean;
+  openActionItems: number;
+};
+
+/**
+ * Meetings this person may see: their own, plus whatever the workspace shares.
+ * The visibility rule lives in one `or` rather than being spread across the
+ * page, because getting it wrong publishes somebody's private notes.
+ */
+export async function getMeetingsForUser(
+  workspaceId: string,
+  userId: string,
+): Promise<MeetingSummary[]> {
+  const rows = await db
+    .select({
+      id: meetings.id,
+      title: meetings.title,
+      startedAt: meetings.startedAt,
+      attendees: meetings.attendees,
+      ownerId: meetings.ownerId,
+      ownerName: users.name,
+      sharedWithWorkspace: meetings.sharedWithWorkspace,
+    })
+    .from(meetings)
+    .innerJoin(users, eq(users.id, meetings.ownerId))
+    .where(
+      and(
+        eq(meetings.workspaceId, workspaceId),
+        or(eq(meetings.sharedWithWorkspace, true), eq(meetings.ownerId, userId)),
+      ),
+    )
+    .orderBy(desc(meetings.startedAt))
+    .limit(200);
+
+  if (rows.length === 0) return [];
+
+  const counts = await db
+    .select({
+      meetingId: meetingActionItems.meetingId,
+      status: meetingActionItems.status,
+    })
+    .from(meetingActionItems)
+    .where(
+      inArray(
+        meetingActionItems.meetingId,
+        rows.map((row) => row.id),
+      ),
+    );
+
+  const open = new Map<string, number>();
+  for (const item of counts) {
+    if (item.status !== "suggested") continue;
+    open.set(item.meetingId, (open.get(item.meetingId) ?? 0) + 1);
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    startedAt: row.startedAt?.toISOString() ?? null,
+    openActionItems: open.get(row.id) ?? 0,
+  }));
+}
+
+export type MeetingDetail = {
+  id: string;
+  title: string;
+  startedAt: string | null;
+  endedAt: string | null;
+  attendees: { name: string | null; email: string | null }[];
+  summary: string | null;
+  transcript: string | null;
+  webUrl: string | null;
+  ownerId: string;
+  ownerName: string;
+  sharedWithWorkspace: boolean;
+  actionItems: {
+    id: string;
+    text: string;
+    status: string;
+    cardId: string | null;
+    boardId: string | null;
+  }[];
+};
+
+export async function getMeetingDetail(
+  meetingId: string,
+  userId: string,
+): Promise<MeetingDetail | null> {
+  const [row] = await db
+    .select({ meeting: meetings, ownerName: users.name })
+    .from(meetings)
+    .innerJoin(users, eq(users.id, meetings.ownerId))
+    .where(eq(meetings.id, meetingId))
+    .limit(1);
+  if (!row) return null;
+
+  // Same visibility rule as the list. A private note is not readable by URL
+  // just because somebody guessed the id.
+  const { meeting } = row;
+  if (!meeting.sharedWithWorkspace && meeting.ownerId !== userId) return null;
+
+  const membership = await db
+    .select({ userId: workspaceMembers.userId })
+    .from(workspaceMembers)
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, meeting.workspaceId),
+        eq(workspaceMembers.userId, userId),
+      ),
+    )
+    .limit(1);
+  if (membership.length === 0) return null;
+
+  const items = await db
+    .select({
+      id: meetingActionItems.id,
+      text: meetingActionItems.text,
+      status: meetingActionItems.status,
+      cardId: meetingActionItems.cardId,
+      boardId: cards.boardId,
+    })
+    .from(meetingActionItems)
+    .leftJoin(cards, eq(cards.id, meetingActionItems.cardId))
+    .where(eq(meetingActionItems.meetingId, meetingId))
+    .orderBy(asc(meetingActionItems.ordinal), asc(meetingActionItems.createdAt));
+
+  return {
+    id: meeting.id,
+    title: meeting.title,
+    startedAt: meeting.startedAt?.toISOString() ?? null,
+    endedAt: meeting.endedAt?.toISOString() ?? null,
+    attendees: meeting.attendees,
+    summary: meeting.summary,
+    transcript: meeting.transcript,
+    webUrl: meeting.webUrl,
+    ownerId: meeting.ownerId,
+    ownerName: row.ownerName,
+    sharedWithWorkspace: meeting.sharedWithWorkspace,
+    actionItems: items,
+  };
 }

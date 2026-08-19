@@ -4,8 +4,13 @@ import { eq } from "drizzle-orm";
 import { createWorkspace } from "@/app/actions/workspaces";
 import { AppShell } from "@/components/AppShell";
 import { GooglePanel } from "@/components/settings/GooglePanel";
+import { GranolaPanel } from "@/components/settings/GranolaPanel";
 import { db } from "@/db";
-import { googleAccounts } from "@/db/schema";
+import {
+  googleAccounts,
+  granolaAccounts,
+  workspaces as workspacesTable,
+} from "@/db/schema";
 import { googleConfigured } from "@/lib/google/client";
 import { getWorkspacesForUser } from "@/lib/queries";
 import { getCurrentUser } from "@/lib/session";
@@ -37,13 +42,29 @@ export default async function SettingsPage({
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [query, workspaces, account] = await Promise.all([
+  const [query, workspaces, account, granola] = await Promise.all([
     searchParams,
     getWorkspacesForUser(user.id),
     db
       .select()
       .from(googleAccounts)
       .where(eq(googleAccounts.userId, user.id))
+      .limit(1)
+      .then((rows) => rows[0] ?? null),
+    db
+      .select({
+        keyHint: granolaAccounts.keyHint,
+        syncEnabled: granolaAccounts.syncEnabled,
+        lastSyncedAt: granolaAccounts.lastSyncedAt,
+        lastSyncError: granolaAccounts.lastSyncError,
+        workspaceName: workspacesTable.name,
+      })
+      .from(granolaAccounts)
+      .innerJoin(
+        workspacesTable,
+        eq(workspacesTable.id, granolaAccounts.workspaceId),
+      )
+      .where(eq(granolaAccounts.userId, user.id))
       .limit(1)
       .then((rows) => rows[0] ?? null),
   ]);
@@ -85,6 +106,21 @@ export default async function SettingsPage({
               : null
           }
           configured={googleConfigured()}
+        />
+
+        <GranolaPanel
+          account={
+            granola
+              ? {
+                  ...granola,
+                  lastSyncedAt: granola.lastSyncedAt?.toISOString() ?? null,
+                }
+              : null
+          }
+          workspaces={workspaces.map((workspace) => ({
+            id: workspace.id,
+            name: workspace.name,
+          }))}
         />
 
         <section className="panel p-5">

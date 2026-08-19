@@ -62,6 +62,10 @@ export function AppShell({
             </div>
           ) : null}
 
+          <Link href="/meetings" className="btn-ghost px-2 py-1.5 text-sm">
+            Meetings
+          </Link>
+
           <Link href="/settings" className="btn-ghost px-2 py-1.5 text-sm">
             Settings
           </Link>

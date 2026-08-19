@@ -1,0 +1,1 @@
+ALTER TABLE "meeting_action_items" ADD COLUMN "ordinal" integer DEFAULT 0 NOT NULL;

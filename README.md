@@ -78,6 +78,9 @@ changing what the board groups by is a dropdown rather than a data migration.
 - **Google Calendar, two ways.** Assigned cards with dates appear on your
   calendar; moving the event moves the card. (Written but not yet verified
   against Google's API: see the note below.)
+- **Meeting notes to tasks.** Optional Granola integration: notes sync in,
+  action items are read out of them, and one click turns one into a card that
+  remembers which meeting it came from.
 - **Everyone's diary on one grid.** The calendar view lists the team down the
   side, one colour each, with a switch each. Turn people on to find the gap you
   can all make, off when their day is noise. Colours are stable, so after a day
@@ -221,6 +224,41 @@ curl -H "authorization: Bearer $CRON_SECRET" https://your-host/api/cron/sync
 Set `CRON_SECRET` in `.env` to require the header. Locally, the **Sync now**
 button in Settings does the same thing. Each poll sends Google a sync token and
 gets back only what changed, so leaving it on is cheap.
+
+## Meeting notes from Granola
+
+Optional, and only useful if your Granola workspace issues API keys (their
+Business plan and up). Without one the integration is invisible.
+
+> **Not yet verified against Granola's API.** The mapping, the sharing rule and
+> the action-item extraction are covered by tests and the UI has been driven
+> against seeded data, but no HTTP request has ever been made to Granola. Field
+> names and error codes are as documented rather than as observed. If you
+> connect a key and it works, or does not, an issue saying so would help.
+
+Paste your key in Settings and pick which workspace notes land in. Meeting
+notes then appear under **Meetings**: the list on the left, the note and its
+action items on the right. Accepting an action item creates a card carrying a
+line saying which meeting it came from, so a task nobody remembers agreeing to
+can be traced back to the room it was agreed in.
+
+**What other people can see.** Granola records everything you attend, including
+one-to-ones, interviews and calls with other companies. A note is shared with
+the workspace only when two or more members of that workspace were in the
+meeting; everything else stays private to you, marked *private* in the list.
+You can share or unshare any note by hand, and that decision sticks. Matching
+is on email address, never on name.
+
+**Action items are read, not invented.** They come from a parser over the
+summary: bullets under an action heading, unchecked boxes, and a narrow set of
+commitment phrasings. There is no LLM involved, so the feature needs no second
+API key and costs nothing to run. It is conservative on purpose, because a
+missed item is a line you re-read while a false one is a card nobody agreed to.
+Nothing becomes a card without somebody clicking.
+
+Notes arrive on the same cron as the calendar sync. `pnpm tsx
+tools/seed-granola.ts` fabricates a few meetings if you want to see the page
+without a key.
 
 ## Running it publicly
 

@@ -526,6 +526,13 @@ export const meetingActionItems = pgTable(
     text: text("text").notNull(),
     /** Stable hash of the text, so re-syncing a note does not duplicate items. */
     fingerprint: text("fingerprint").notNull(),
+    /**
+     * Position in the note. A whole note's items are inserted in one statement
+     * and share a created_at to the millisecond, so ordering by time returns
+     * them in whatever order the database feels like; this keeps them in the
+     * order they were written down.
+     */
+    ordinal: integer("ordinal").notNull().default(0),
     status: text("status").notNull().default("suggested"), // suggested|accepted|dismissed
     /** Set once accepted onto a board. */
     cardId: text("card_id").references(() => cards.id, { onDelete: "set null" }),
