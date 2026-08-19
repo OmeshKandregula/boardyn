@@ -2,6 +2,7 @@ import {
   boolean,
   doublePrecision,
   index,
+  integer,
   jsonb,
   pgTable,
   primaryKey,
@@ -374,6 +375,25 @@ export const externalEvents = pgTable(
   (t) => [
     uniqueIndex("external_events_unique_idx").on(t.googleAccountId, t.eventId),
     index("external_events_range_idx").on(t.googleAccountId, t.startAt),
+  ],
+);
+
+/**
+ * Fixed-window counters for the auth endpoints. In Postgres rather than memory
+ * so a restart does not hand an attacker a fresh budget, and so several app
+ * containers share one limit instead of one each.
+ */
+export const rateLimitHits = pgTable(
+  "rate_limit_hits",
+  {
+    // Scope plus subject, e.g. "login:email:someone@example.com".
+    key: text("key").notNull(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [
+    primaryKey({ columns: [t.key, t.windowStart] }),
+    index("rate_limit_hits_window_idx").on(t.windowStart),
   ],
 );
 

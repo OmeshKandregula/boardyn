@@ -8,16 +8,34 @@ import { users, workspaceInvites, workspaceMembers, workspaces } from "@/db/sche
 import { colorFor } from "@/lib/constants";
 import { ids, slugify } from "@/lib/ids";
 import { hashPassword, verifyPassword } from "@/lib/password";
+import {
+  RULES,
+  clientAddress,
+  consume,
+  describeRetry,
+  loginKeys,
+  maybeSweep,
+  reset,
+  signupKey,
+} from "@/lib/rate-limit";
 import { createSession, destroySession } from "@/lib/session";
 
 export type FormState = { error?: string } | undefined;
 
-const credentials = z.object({
+/**
+ * Sign-in checks only that something was typed. A length rule here would lock
+ * out anyone whose password predates a policy change, and it tells an attacker
+ * where the floor is. Length is a rule about choosing a password, not about
+ * presenting one, so it lives on the signup schema alone.
+ */
+const signinSchema = z.object({
   email: z.string().email("Enter a valid email address"),
-  password: z.string().min(10, "Use at least 10 characters"),
+  password: z.string().min(1, "Enter your password"),
 });
 
-const signupSchema = credentials.extend({
+const signupSchema = z.object({
+  email: z.string().email("Enter a valid email address"),
+  password: z.string().min(10, "Use at least 10 characters"),
   name: z.string().min(1, "Tell us your name").max(80),
   inviteToken: z.string().optional(),
 });
@@ -37,6 +55,19 @@ export async function signUp(
   }
 
   const { name, email, password, inviteToken } = parsed.data;
+
+  // Counted before the scrypt hash below, which is the expensive part and
+  // therefore the part worth protecting from being run in a loop.
+  const signupLimit = await consume(
+    signupKey(await clientAddress()),
+    RULES.signupPerIp,
+  );
+  if (!signupLimit.allowed) {
+    return {
+      error: `Too many accounts created from this address. Try again in ${describeRetry(signupLimit.retryAfterSeconds)}.`,
+    };
+  }
+  void maybeSweep();
 
   const [existing] = await db
     .select({ id: users.id })
@@ -85,11 +116,28 @@ export async function signIn(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const parsed = credentials.safeParse({
+  const parsed = signinSchema.safeParse({
     email: String(formData.get("email") ?? "").trim().toLowerCase(),
     password: String(formData.get("password") ?? ""),
   });
   if (!parsed.success) return { error: "Check your email and password" };
+
+  // Both limits are counted before the password is verified. Verifying costs a
+  // scrypt hash, so checking first is what keeps a flood of guesses from being
+  // a CPU exhaustion attack as well as a credential one.
+  const keys = loginKeys(parsed.data.email, await clientAddress());
+  const [byEmail, byIp] = await Promise.all([
+    consume(keys.email, RULES.loginPerEmail),
+    consume(keys.ip, RULES.loginPerIp),
+  ]);
+  void maybeSweep();
+
+  if (!byEmail.allowed || !byIp.allowed) {
+    const wait = Math.max(byEmail.retryAfterSeconds, byIp.retryAfterSeconds);
+    return {
+      error: `Too many sign-in attempts. Try again in ${describeRetry(wait)}.`,
+    };
+  }
 
   const [user] = await db
     .select()
@@ -101,6 +149,10 @@ export async function signIn(
   // login form into an account-enumeration oracle.
   const ok = user && (await verifyPassword(parsed.data.password, user.passwordHash));
   if (!ok) return { error: "Email or password is incorrect" };
+
+  // Someone who mistyped a few times and then got it right should not stay
+  // locked out of their own account for the rest of the window.
+  await reset(keys.email);
 
   const inviteToken = String(formData.get("inviteToken") ?? "");
   let landing: string | null = null;

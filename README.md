@@ -138,6 +138,23 @@ Set `CRON_SECRET` in `.env` to require the header. Locally, the **Sync now**
 button in Settings does the same thing. Each poll sends Google a sync token and
 gets back only what changed, so leaving it on is cheap.
 
+## Running it publicly
+
+Sign-in and signup are rate limited, counted in Postgres so a restart does not
+reset anyone's budget and several containers share one limit. Ten sign-in
+attempts per email and thirty per address in fifteen minutes; five signups per
+address per hour. A successful sign-in clears the counter for that email, so a
+few typos do not lock you out of your own account, but it does not clear the
+one for the address: cracking one account should not refund the budget for
+guessing at the rest.
+
+Addresses come from `x-forwarded-for`. Behind a proxy that is the real client;
+without one it is attacker-controlled and can be varied freely. The per-email
+limit is the one that does not depend on it, which is why both exist.
+
+Two things still worth doing before exposing an instance to the open internet:
+put it behind TLS, and put it behind a proxy you trust to set that header.
+
 ## How it is put together
 
 ```
