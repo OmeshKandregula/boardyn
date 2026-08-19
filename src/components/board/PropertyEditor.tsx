@@ -27,7 +27,8 @@ export function PropertyEditor({
 }) {
   const [, startTransition] = useTransition();
   const [creating, setCreating] = useState(false);
-  const base = compact ? "text-xs py-1" : "text-sm";
+  // `compact` is the table variant, where chrome stays out of the way.
+  const base = compact ? "text-xs py-1 field-ghost" : "text-sm";
 
   switch (property.type) {
     case "select":
@@ -45,7 +46,10 @@ export function PropertyEditor({
               </option>
             ))}
           </select>
-          {creating ? (
+          {/* Adding an option from a table cell is a rare act, and the button
+              repeated down every row is not worth the clutter. The card dialog
+              still offers it. */}
+          {compact ? null : creating ? (
             <input
               autoFocus
               className={`field ${base} w-28`}

@@ -95,7 +95,7 @@ export function TableView({
               <Td>
                 <input
                   type="date"
-                  className="field py-1 text-xs"
+                  className="field field-ghost py-1 text-xs"
                   value={card.dueAt ? toDateOnly(card.dueAt) : ""}
                   onChange={(event) =>
                     mutations.patch(card.id, {

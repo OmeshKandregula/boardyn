@@ -74,6 +74,27 @@ body {
            placeholder:text-[color:var(--color-ink-faint)]
            focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20;
   }
+  /*
+   * Table cells are editable in place, which meant every cell rendered as a
+   * bordered control and the whole view read as a form dump rather than a
+   * table. The chrome now appears on hover and focus, so the data is what you
+   * see and the affordance is still there when you reach for it.
+   */
+  .field-ghost {
+    @apply border-transparent bg-transparent;
+  }
+  .field-ghost:hover,
+  .field-ghost:focus {
+    @apply border-[color:var(--color-line)] bg-[color:var(--color-canvas)];
+  }
+  /*
+   * An empty date input renders "dd-mm-yyyy", which in a table of thirteen
+   * rows is thirteen lines of noise saying nothing. Hidden until the cell is
+   * focused, at which point the format hint is actually useful.
+   */
+  .field-ghost[type="date"]:not(:focus):invalid::-webkit-datetime-edit {
+    opacity: 0;
+  }
   .panel {
     @apply rounded-xl border border-[color:var(--color-line)]
            bg-[color:var(--color-surface)];

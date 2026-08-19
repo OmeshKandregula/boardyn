@@ -10,13 +10,48 @@ happens to draw boards, and every hosted option charges per seat for a team of
 two. It is the board we run [Bulletyn](https://readbulletyn.com) on, spun out of
 that work and open-sourced on its own. MIT licensed. Bring your own Postgres.
 
-```
-Board view          Table view         Calendar view       Gallery view
-┌────┬────┬────┐    ┌──┬──┬──┬──┐     ┌─┬─┬─┬─┬─┬─┬─┐    ┌────┐┌────┐┌────┐
-│ ▢  │ ▢  │    │    ├──┼──┼──┼──┤     ├─┼─┼─┼─┼─┼─┼─┤    │ ▢  ││ ▢  ││ ▢  │
-│ ▢  │    │ ▢  │    ├──┼──┼──┼──┤     ├─┼─┼─┼─┼─┼─┼─┤    └────┘└────┘└────┘
-└────┴────┴────┘    └──┴──┴──┴──┘     └─┴─┴─┴─┴─┴─┴─┘
-```
+![The board view: cards in Backlog, In progress, In review and Done columns](docs/screenshots/board.png)
+
+## The same cards, four ways
+
+Every view reads the same cards. Columns come from a select property, so
+changing what the board groups by is a dropdown rather than a data migration.
+
+<table>
+  <tr>
+    <td width="50%">
+      <a href="docs/screenshots/table.png">
+        <img src="docs/screenshots/table.png" alt="Table view: one row per card, editable in place" />
+      </a>
+      <p><strong>Table.</strong> Every cell edits in place. Sorting is saved on
+      the view, so it is something you set once and both of you see.</p>
+    </td>
+    <td width="50%">
+      <a href="docs/screenshots/calendar.png">
+        <img src="docs/screenshots/calendar.png" alt="Calendar view: a month grid with cards on their due dates" />
+      </a>
+      <p><strong>Calendar.</strong> Drag a card to another day to change its due
+      date. Connected Google Calendars draw behind the cards, so you can see
+      where there is actually room.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <a href="docs/screenshots/gallery.png">
+        <img src="docs/screenshots/gallery.png" alt="Gallery view: cards in a grid, sectioned by status, with notes" />
+      </a>
+      <p><strong>Gallery.</strong> Notes visible without opening anything. The
+      view for boards where the writing matters more than the order.</p>
+    </td>
+    <td width="50%">
+      <a href="docs/screenshots/board.png">
+        <img src="docs/screenshots/board.png" alt="Board view: kanban columns" />
+      </a>
+      <p><strong>Board.</strong> Drag to reorder or move between columns. One
+      row is updated per drag, whatever the column size.</p>
+    </td>
+  </tr>
+</table>
 
 ## What it does
 
