@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": false,
   "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
   "description": "A self-hosted, multi-view project board for small teams.",
   "scripts": {
     "dev": "next dev",

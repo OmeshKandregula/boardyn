@@ -84,7 +84,7 @@ changing what the board groups by is a dropdown rather than a data migration.
 With Docker, the whole thing is one command:
 
 ```bash
-git clone <your fork> boardyn && cd boardyn
+git clone https://github.com/OmeshKandregula/boardyn.git && cd boardyn
 docker compose up
 ```
 
@@ -114,8 +114,10 @@ pnpm db:migrate
 pnpm dev
 ```
 
-`pnpm db:seed` fills your workspace with a sample board if you want something
-to look at first.
+`pnpm db:seed` fills the oldest account's workspace with a sample board, which
+is the one in the screenshots above. Sign up first: it needs an account to
+attach the board to, and it will tell you so if you run it on an empty
+database.
 
 ### Deploying it
 
@@ -134,8 +136,37 @@ docker run -p 3000:3000 \
 `/api/health` returns 200 only when the app can reach the database, which is
 what the container healthcheck and most load balancers want.
 
-To invite your co-founder: Settings, enter their email, send them the link that
-appears. It works once, for that address.
+### The first five minutes
+
+1. **Sign up.** The first account gets a workspace of its own. There is no
+   admin to wait for and no instance-wide setup step.
+2. **Name a board.** It arrives with a Status property (Backlog, In progress,
+   In review, Done), a Priority property, and one of each view already set up,
+   because a board with no schema has nothing to group by and cannot render a
+   kanban.
+3. **Add cards** with the `+` on a column, or from any view. Enter adds another;
+   Escape stops.
+4. **Make it yours.** *Add property* grows the board a field: text, number,
+   select, multi-select, date, person, checkbox or link. Any select property
+   can become the columns, so *Group by* turns a Status board into a Priority
+   board or an Owner board without touching the data.
+5. **Invite the other person.** Open your workspace, click the member count, and
+   create an invite. You get a link to send them; it works once, for that
+   address. There is no email configured on a fresh instance, which is why it
+   hands you a link instead of pretending to send one.
+
+Both of you now see the same board update live, without refreshing.
+
+### Making it fit your team
+
+- **Views are shared, not personal.** A filter or sort you set is one your
+  teammate sees. If you want a private slice, add a view: they cost nothing.
+- **"Done is"** on the board toolbar tells Boardyn which column means finished,
+  so completed work stops being flagged as overdue. Point it wherever your
+  workflow ends.
+- **Nothing is deleted.** Archiving puts a card in the Archive panel, which
+  restores it with properties, dates and comments intact.
+- **There is no save button anywhere.** Every edit writes through immediately.
 
 ## Google Calendar sync
 

@@ -46,3 +46,51 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # The README tells people the whole thing is one command. This is that command,
+  # run for real: build the image, bring up Postgres beside it, wait for the
+  # container's own healthcheck, and confirm the app answers. Without this the
+  # first-run experience is only ever verified by strangers.
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: docker compose up
+        run: docker compose up -d --build
+
+      - name: Wait for the app to report healthy
+        run: |
+          for i in $(seq 1 60); do
+            container=$(docker compose ps -q app)
+            status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo starting)
+            echo "attempt $i: $status"
+            if [ "$status" = "healthy" ]; then exit 0; fi
+            if [ "$status" = "unhealthy" ]; then break; fi
+            sleep 5
+          done
+          echo "App never became healthy."
+          docker compose logs
+          exit 1
+
+      - name: The first-run pages actually serve
+        run: |
+          set -e
+          # Health is the container's own check; these are what a person sees.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/health)" = "200"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/login)" = "200"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/signup)" = "200"
+          # Signed out, the root must send you to the login page rather than 500.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/)" = "307"
+
+      - name: Migrations ran against a fresh volume
+        run: |
+          docker compose exec -T db psql -U boardyn -d boardyn -c '\dt' | grep -q workspace_members
+
+      - name: Show logs if anything failed
+        if: failure()
+        run: docker compose logs
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
