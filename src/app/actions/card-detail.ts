@@ -1,7 +1,7 @@
 "use server";
 
-import { requireCardAccess } from "@/lib/access";
-import { getCardDetail } from "@/lib/queries";
+import { requireBoardAccess, requireCardAccess } from "@/lib/access";
+import { getArchivedCards, getCardDetail } from "@/lib/queries";
 
 export type CardDetail = {
   comments: {
@@ -33,4 +33,22 @@ export async function fetchCardDetail(cardId: string): Promise<CardDetail> {
       createdAt: entry.createdAt,
     })),
   };
+}
+
+export type ArchivedCard = {
+  id: string;
+  title: string;
+  archivedAt: string;
+  dueAt: string | null;
+};
+
+/**
+ * Loaded on demand rather than shipped with every board render. The archive
+ * only matters at the moment someone goes looking for it.
+ */
+export async function fetchArchivedCards(
+  boardId: string,
+): Promise<ArchivedCard[]> {
+  await requireBoardAccess(boardId);
+  return getArchivedCards(boardId);
 }

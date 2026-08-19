@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNull, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import {
   activity,
@@ -262,6 +262,31 @@ export async function getExternalEvents(
     endAt: row.endAt.toISOString(),
     allDay: row.allDay,
     htmlLink: row.htmlLink,
+  }));
+}
+
+/**
+ * Archived cards, newest first. Archiving is the destructive path in this app,
+ * so there has to be somewhere to see what went into it and pull it back out.
+ */
+export async function getArchivedCards(boardId: string) {
+  const rows = await db
+    .select({
+      id: cards.id,
+      title: cards.title,
+      archivedAt: cards.archivedAt,
+      dueAt: cards.dueAt,
+    })
+    .from(cards)
+    .where(and(eq(cards.boardId, boardId), isNotNull(cards.archivedAt)))
+    .orderBy(desc(cards.archivedAt))
+    .limit(100);
+
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    archivedAt: row.archivedAt!.toISOString(),
+    dueAt: row.dueAt?.toISOString() ?? null,
   }));
 }
 

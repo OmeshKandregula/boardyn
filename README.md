@@ -27,6 +27,11 @@ Board view          Table view         Calendar view       Gallery view
   board.
 - **Custom properties.** Text, number, select, multi-select, date, person,
   checkbox, link. Add one from the board header; no migration involved.
+- **Filters and sorting per view.** Saved on the view, so a filter you set is
+  one your co-founder sees. Anyone wanting a private slice adds their own view.
+- **Archive, with a way back.** Nothing is deleted outright. The Archive button
+  lists what has been put away and restores it with properties, dates and
+  comments intact.
 - **Multi-user.** Email and password auth, workspaces, invite links, sessions
   in Postgres.
 - **Live updates.** Both people see a drag land within a beat, over

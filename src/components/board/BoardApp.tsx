@@ -206,7 +206,9 @@ export function BoardApp({
         bundle={bundle}
         view={view}
         cardCount={filtered.length}
+        hiddenCount={cards.length - filtered.length}
         onSelectView={setActiveViewId}
+        onArchiveChanged={() => router.refresh()}
       />
 
       <div className="min-h-0 flex-1">

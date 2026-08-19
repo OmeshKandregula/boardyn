@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { createProperty, createView, updateView } from "@/app/actions/boards";
+import { ArchivePanel } from "./ArchivePanel";
+import { FilterBar } from "./FilterBar";
 import { PROPERTY_TYPES, PROPERTY_TYPE_LABELS, VIEW_TYPES } from "@/lib/constants";
 import type { View } from "@/db/schema";
 import type { BoardBundle } from "@/lib/queries";
@@ -17,17 +19,22 @@ export function ViewBar({
   bundle,
   view,
   cardCount,
+  hiddenCount,
   onSelectView,
+  onArchiveChanged,
 }: {
   bundle: BoardBundle;
   view: View;
   cardCount: number;
+  hiddenCount: number;
   onSelectView: (viewId: string) => void;
+  onArchiveChanged: () => void;
 }) {
   const [, startTransition] = useTransition();
   const [menu, setMenu] = useState<"none" | "view" | "property" | "options">(
     "none",
   );
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   const selectProperties = bundle.properties.filter(
     (property) => property.type === "select",
@@ -136,6 +143,14 @@ export function ViewBar({
             </label>
           ) : null}
 
+          <button
+            onClick={() => setArchiveOpen(true)}
+            className="btn-ghost px-2 py-1 text-xs"
+            title="Archived cards"
+          >
+            Archive
+          </button>
+
           <div className="relative">
             <button
               onClick={() => setMenu(menu === "property" ? "none" : "property")}
@@ -154,6 +169,16 @@ export function ViewBar({
           </div>
         </div>
       </div>
+
+      <FilterBar bundle={bundle} view={view} hiddenCount={hiddenCount} />
+
+      {archiveOpen ? (
+        <ArchivePanel
+          boardId={bundle.board.id}
+          onClose={() => setArchiveOpen(false)}
+          onRestored={onArchiveChanged}
+        />
+      ) : null}
 
       <style jsx global>{`
         .menu-item {
