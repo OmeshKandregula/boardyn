@@ -1,0 +1,37 @@
+name: Feature or change
+description: Something the board should do that it does not
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: >
+        The situation, not the solution. "I cannot tell which cards are waiting
+        on my co-founder" leads somewhere better than "add a Blocked field".
+    validations:
+      required: true
+
+  - type: textarea
+    id: today
+    attributes:
+      label: How do you handle it today
+      description: What you do instead, and where that falls down.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you had in mind
+      description: Optional. A sketch is fine; so is leaving this empty.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Worth knowing
+      options:
+        - label: >
+            I have read the design notes in the README and this does not cut
+            against one of them
+        - label: I would be up for implementing it

@@ -1,0 +1,56 @@
+name: Bug report
+description: Something behaves differently from how it reads
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, and what the app did instead of what you expected.
+      placeholder: |
+        Dragged a card from In progress to Done. It landed back where it started
+        after a second or so.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce it
+      description: >
+        The board state matters more than the clicks. A board with one card
+        behaves differently from one with two hundred.
+      placeholder: |
+        1. Seed a board with `pnpm db:seed`
+        2. Group the board view by Priority
+        3. Drag the top card of Now into Later
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Which commit
+      description: Output of `git rev-parse --short HEAD`, or the image tag.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: how
+    attributes:
+      label: How are you running it
+      options:
+        - docker compose
+        - pnpm dev
+        - Built image somewhere else
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Anything in the logs
+      description: >
+        Server output and browser console. Redact the connection string before
+        pasting: it usually has a password in it.
+      render: shell

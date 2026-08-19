@@ -76,7 +76,8 @@ changing what the board groups by is a dropdown rather than a data migration.
   told which column the card is over.
 - **Google Calendar, two ways.** Assigned cards with dates appear on your
   calendar; moving the event moves the card. Everyone's events draw behind the
-  calendar view so you can see where there is room.
+  calendar view so you can see where there is room. (Written but not yet
+  verified against Google's API: see the note below.)
 
 ## Running it
 
@@ -139,6 +140,16 @@ appears. It works once, for that address.
 ## Google Calendar sync
 
 Optional. Without it everything else works; the calendar view just shows cards.
+
+> **Not yet verified end to end.** Every other feature here has been exercised
+> against a real database and a browser. This one has not: it needs a Google
+> OAuth client, and the round trip (token refresh, card to event, event moved
+> in Google moving the card, the expired-cursor resync) has never run against
+> Google's API. The date arithmetic underneath it is covered by tests, and the
+> code paths are written and reviewed, but treat the table below as intent
+> rather than as tested behaviour until this note goes away. If you connect an
+> account and it works, or does not, an issue saying so would be genuinely
+> useful.
 
 1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials),
    create an OAuth client of type **Web application**.
@@ -232,9 +243,10 @@ not delete, is the destructive path.
 
 ## Contributing
 
-Issues and pull requests welcome. `pnpm typecheck`, `pnpm test` and `pnpm build`
-should pass. CI also builds the Docker image, so changes that break the
-container are caught before merge.
+Issues and pull requests welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for
+setup, the conventions the code expects, and what is likely to be accepted.
+`pnpm typecheck`, `pnpm test` and `pnpm build` should pass; CI also builds the
+Docker image, so changes that break the container are caught before merge.
 
 ## Licence
 
