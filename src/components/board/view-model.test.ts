@@ -4,6 +4,7 @@ import type { CardData, Member } from "@/lib/queries";
 import {
   UNGROUPED,
   groupCards,
+  isCardComplete,
   matchesFilters,
   renderValue,
   sortCards,
@@ -19,6 +20,7 @@ const STATUS: BoardProperty = {
     { id: "opt_todo", name: "Backlog", color: "slate" },
     { id: "opt_doing", name: "In progress", color: "sky" },
   ],
+  doneOptionId: null,
   position: 1000,
   createdAt: new Date(),
 };
@@ -237,5 +239,41 @@ describe("renderValue", () => {
 
   it("renders an empty value as an empty string", () => {
     expect(renderValue(STATUS, null, MEMBERS)).toBe("");
+  });
+});
+
+describe("isCardComplete", () => {
+  const withDone: BoardProperty = { ...STATUS, doneOptionId: "opt_doing" };
+
+  it("is false when no option has been marked terminal", () => {
+    // The default for a board that never configured one: nothing is "done",
+    // so nothing gets special treatment.
+    expect(isCardComplete(card({ values: { [STATUS.id]: "opt_doing" } }), [STATUS])).toBe(false);
+  });
+
+  it("is true for a card sitting in the terminal option", () => {
+    expect(isCardComplete(card({ values: { [STATUS.id]: "opt_doing" } }), [withDone])).toBe(true);
+  });
+
+  it("is false elsewhere in the same property", () => {
+    expect(isCardComplete(card({ values: { [STATUS.id]: "opt_todo" } }), [withDone])).toBe(false);
+  });
+
+  it("is false for a card with no value at all", () => {
+    expect(isCardComplete(card(), [withDone])).toBe(false);
+  });
+
+  it("counts a terminal option on any property, not just the grouping one", () => {
+    // A board can mark "Shipped" on a Release property while grouping by
+    // something else entirely.
+    const release: BoardProperty = {
+      ...STATUS,
+      id: "prp_release",
+      options: [{ id: "opt_shipped", name: "Shipped", color: "emerald" }],
+      doneOptionId: "opt_shipped",
+    };
+    expect(
+      isCardComplete(card({ values: { prp_release: "opt_shipped" } }), [STATUS, release]),
+    ).toBe(true);
   });
 });

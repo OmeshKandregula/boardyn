@@ -1,0 +1,1 @@
+ALTER TABLE "board_properties" ADD COLUMN "done_option_id" text;

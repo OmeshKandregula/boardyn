@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createProperty, createView, updateView } from "@/app/actions/boards";
+import {
+  createProperty,
+  createView,
+  setDoneOption,
+  updateView,
+} from "@/app/actions/boards";
 import { ArchivePanel } from "./ArchivePanel";
 import { FilterBar } from "./FilterBar";
 import { PROPERTY_TYPES, PROPERTY_TYPE_LABELS, VIEW_TYPES } from "@/lib/constants";
@@ -38,6 +43,9 @@ export function ViewBar({
 
   const selectProperties = bundle.properties.filter(
     (property) => property.type === "select",
+  );
+  const groupProperty = bundle.properties.find(
+    (property) => property.id === view.groupByPropertyId,
   );
 
   const close = () => setMenu("none");
@@ -120,6 +128,31 @@ export function ViewBar({
                 {selectProperties.map((property) => (
                   <option key={property.id} value={property.id}>
                     {property.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          {(view.type === "board" || view.type === "gallery") && groupProperty ? (
+            <label
+              className="flex items-center gap-1.5 text-xs text-[color:var(--color-ink-muted)]"
+              title="Cards in this column count as finished, so a past due date stops being flagged as late."
+            >
+              Done is
+              <select
+                className="field w-auto px-2 py-1 text-xs"
+                value={groupProperty.doneOptionId ?? ""}
+                onChange={(event) =>
+                  startTransition(() =>
+                    setDoneOption(groupProperty.id, event.target.value || null),
+                  )
+                }
+              >
+                <option value="">Nothing</option>
+                {groupProperty.options.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
                   </option>
                 ))}
               </select>

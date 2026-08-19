@@ -17,6 +17,7 @@ const STATUS: BoardProperty = {
   name: "Status",
   type: "select",
   options: [{ id: "opt_todo", name: "Backlog", color: "slate" }],
+  doneOptionId: null,
   position: 1000,
   createdAt: new Date(),
 };

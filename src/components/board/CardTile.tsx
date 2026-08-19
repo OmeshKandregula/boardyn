@@ -6,7 +6,7 @@ import { COLOR_CLASSES, type ColorName } from "@/lib/constants";
 import { dateOnlyForDisplay, isOverdue } from "@/lib/dates";
 import type { BoardProperty } from "@/db/schema";
 import type { CardData, Member } from "@/lib/queries";
-import { optionById, renderValue } from "./view-model";
+import { isCardComplete, optionById, renderValue } from "./view-model";
 
 /**
  * The card as it appears in a column or a gallery. Everything on it is a
@@ -35,7 +35,9 @@ export function CardTile({
   // Rendered from the calendar day, not the stored instant: a due date is the
   // same day for both founders regardless of where either of them is.
   const due = card.dueAt ? dateOnlyForDisplay(card.dueAt) : null;
-  const overdue = card.dueAt ? isOverdue(card.dueAt) : false;
+  const complete = isCardComplete(card, properties);
+  // A finished card is not late, however long ago it was due.
+  const overdue = card.dueAt ? isOverdue(card.dueAt) && !complete : false;
 
   return (
     <article
@@ -64,7 +66,7 @@ export function CardTile({
                   ? "bg-rose-500/15 text-rose-300 ring-rose-400/25"
                   : "bg-white/5 text-[color:var(--color-ink-muted)] ring-white/10"
               }`}
-              title={overdue ? "Past due" : "Due"}
+              title={complete ? "Was due" : overdue ? "Past due" : "Due"}
             >
               {format(due, "MMM d")}
             </span>

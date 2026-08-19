@@ -61,6 +61,9 @@ export async function createBoard(formData: FormData): Promise<void> {
         name: "Status",
         type: "select",
         options: statusOptions,
+        // The default board has an obvious terminal column; boards that grow
+        // their own workflow can point this wherever it belongs.
+        doneOptionId: statusOptions.at(-1)!.id,
         position: POSITION_STEP,
       },
       {
@@ -279,6 +282,37 @@ export async function addPropertyOption(
   await publish({ boardId: property.boardId, kind: "board.updated" });
   revalidatePath(`/b/${property.boardId}`);
   return option.id;
+}
+
+/**
+ * Marks which option of a select means the work is finished, or clears it.
+ * Cards sitting in that option stop being reported as overdue.
+ */
+export async function setDoneOption(
+  propertyId: string,
+  optionId: string | null,
+): Promise<void> {
+  const [property] = await db
+    .select()
+    .from(boardProperties)
+    .where(eq(boardProperties.id, propertyId))
+    .limit(1);
+  if (!property) return;
+  await requireBoardAccess(property.boardId);
+
+  // Only an option this property actually has, so a stale id cannot silently
+  // mark every card complete or nothing at all.
+  const valid =
+    optionId === null || property.options.some((o) => o.id === optionId);
+  if (!valid) return;
+
+  await db
+    .update(boardProperties)
+    .set({ doneOptionId: optionId })
+    .where(eq(boardProperties.id, propertyId));
+
+  await publish({ boardId: property.boardId, kind: "board.updated" });
+  revalidatePath(`/b/${property.boardId}`);
 }
 
 export async function updatePropertyOption(

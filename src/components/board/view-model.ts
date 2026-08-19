@@ -124,6 +124,23 @@ export function groupCards(
   return ungrouped.cards.length > 0 ? [ungrouped, ...groups] : groups;
 }
 
+/**
+ * Whether a card sits in a terminal option of any of its board's select
+ * properties. Used to stop finished work being styled as late: a Done column
+ * full of red dates reads as a wall of missed deadlines rather than a week of
+ * completed work.
+ */
+export function isCardComplete(
+  card: CardData,
+  properties: BoardProperty[],
+): boolean {
+  return properties.some(
+    (property) =>
+      property.doneOptionId != null &&
+      card.values[property.id] === property.doneOptionId,
+  );
+}
+
 export function optionById(
   property: BoardProperty | undefined,
   optionId: unknown,

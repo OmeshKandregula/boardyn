@@ -156,6 +156,16 @@ export const boardProperties = pgTable(
     name: text("name").notNull(),
     type: text("type").notNull(), // text|number|select|multiSelect|date|person|checkbox|url
     options: jsonb("options").$type<PropertyOption[]>().notNull().default([]),
+    /**
+     * Which option, if any, means the work is finished.
+     *
+     * The app has no built-in notion of "done": Status is a user-defined select
+     * like any other, and the last option is not reliably terminal (plenty of
+     * boards end in "Shipped", "Archived" or "Won't do"). Naming the option
+     * explicitly is what lets a completed card stop being reported as overdue
+     * without the code guessing at anyone's workflow.
+     */
+    doneOptionId: text("done_option_id"),
     position: doublePrecision("position").notNull().default(1000),
     createdAt: createdAt(),
   },

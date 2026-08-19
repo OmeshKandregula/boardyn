@@ -78,6 +78,7 @@ async function main() {
       name: "Status",
       type: "select",
       options: status,
+      doneOptionId: status.at(-1)!.id,
       position: POSITION_STEP,
     },
     {
