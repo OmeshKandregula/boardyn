@@ -61,7 +61,12 @@ export default async function WorkspacePage({
             </h1>
             <p className="mt-1 text-sm text-[color:var(--color-ink-muted)]">
               {boards.length} board{boards.length === 1 ? "" : "s"} ·{" "}
-              {members.length} member{members.length === 1 ? "" : "s"}
+              <Link
+                href={`/w/${slug}/settings`}
+                className="underline decoration-dotted underline-offset-4 hover:text-[color:var(--color-ink)]"
+              >
+                {members.length} member{members.length === 1 ? "" : "s"}
+              </Link>
             </p>
           </div>
 

@@ -59,7 +59,7 @@ export async function inviteMember(
   });
 
   const base = process.env.APP_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
-  revalidatePath("/settings");
+  await revalidateWorkspaceSettings(workspaceId);
   return { url: `${base}/invite/${token}` };
 }
 
@@ -75,7 +75,7 @@ export async function revokeInvite(inviteId: string): Promise<void> {
   if (role !== "owner") return;
 
   await db.delete(workspaceInvites).where(eq(workspaceInvites.id, inviteId));
-  revalidatePath("/settings");
+  await revalidateWorkspaceSettings(invite.workspaceId);
 }
 
 export async function removeMember(
@@ -93,7 +93,21 @@ export async function removeMember(
         eq(workspaceMembers.userId, userId),
       ),
     );
-  revalidatePath("/settings");
+  await revalidateWorkspaceSettings(workspaceId);
+}
+
+/**
+ * Members and invites are rendered at /w/[slug]/settings, so that is what has
+ * to be revalidated after a change. Looking the slug up here keeps callers
+ * from having to thread it through the client.
+ */
+async function revalidateWorkspaceSettings(workspaceId: string): Promise<void> {
+  const [workspace] = await db
+    .select({ slug: workspaces.slug })
+    .from(workspaces)
+    .where(eq(workspaces.id, workspaceId))
+    .limit(1);
+  if (workspace) revalidatePath(`/w/${workspace.slug}/settings`);
 }
 
 async function uniqueSlug(base: string): Promise<string> {

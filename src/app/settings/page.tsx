@@ -1,16 +1,24 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { and, eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { createWorkspace } from "@/app/actions/workspaces";
 import { AppShell } from "@/components/AppShell";
 import { GooglePanel } from "@/components/settings/GooglePanel";
-import { MembersPanel } from "@/components/settings/MembersPanel";
 import { db } from "@/db";
-import { googleAccounts, workspaceInvites } from "@/db/schema";
+import { googleAccounts } from "@/db/schema";
 import { googleConfigured } from "@/lib/google/client";
-import { getWorkspaceMembers, getWorkspacesForUser } from "@/lib/queries";
+import { getWorkspacesForUser } from "@/lib/queries";
 import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Account-level settings only: the things that belong to you rather than to a
+ * workspace. Members and invites live at /w/[slug]/settings, because there is
+ * no such thing as "the current workspace" on a page reached from the top bar,
+ * and guessing at one silently pointed the invite and remove controls at the
+ * wrong set of people.
+ */
 
 const ERRORS: Record<string, string> = {
   google_not_configured:
@@ -29,23 +37,9 @@ export default async function SettingsPage({
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const query = await searchParams;
-  const workspaces = await getWorkspacesForUser(user.id);
-  const active = workspaces[0];
-
-  const [members, invites, account] = await Promise.all([
-    active ? getWorkspaceMembers(active.id) : Promise.resolve([]),
-    active
-      ? db
-          .select()
-          .from(workspaceInvites)
-          .where(
-            and(
-              eq(workspaceInvites.workspaceId, active.id),
-              isNull(workspaceInvites.acceptedAt),
-            ),
-          )
-      : Promise.resolve([]),
+  const [query, workspaces, account] = await Promise.all([
+    searchParams,
+    getWorkspacesForUser(user.id),
     db
       .select()
       .from(googleAccounts)
@@ -55,7 +49,7 @@ export default async function SettingsPage({
   ]);
 
   return (
-    <AppShell user={user} workspaces={workspaces} members={members}>
+    <AppShell user={user} workspaces={workspaces}>
       <div className="mx-auto w-full max-w-2xl space-y-8 px-6 py-10">
         <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
 
@@ -93,28 +87,43 @@ export default async function SettingsPage({
           configured={googleConfigured()}
         />
 
-        {active ? (
-          <MembersPanel
-            workspaceId={active.id}
-            workspaceName={active.name}
-            currentUserId={user.id}
-            isOwner={active.role === "owner"}
-            members={members}
-            invites={invites.map((invite) => ({
-              id: invite.id,
-              email: invite.email,
-              token: invite.token,
-              expiresAt: invite.expiresAt.toISOString(),
-            }))}
-          />
-        ) : null}
-
         <section className="panel p-5">
-          <h2 className="mb-3 text-sm font-semibold">New workspace</h2>
+          <h2 className="mb-1 text-sm font-semibold">Workspaces</h2>
+          <p className="mb-4 text-sm text-[color:var(--color-ink-muted)]">
+            Members and invites are managed inside each workspace.
+          </p>
+
+          <ul className="mb-5 space-y-1.5">
+            {workspaces.map((workspace) => (
+              <li
+                key={workspace.id}
+                className="flex items-center gap-2 text-sm"
+              >
+                <Link
+                  href={`/w/${workspace.slug}`}
+                  className="hover:underline"
+                >
+                  {workspace.name}
+                </Link>
+                {workspace.role === "owner" ? (
+                  <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[color:var(--color-ink-faint)]">
+                    owner
+                  </span>
+                ) : null}
+                <Link
+                  href={`/w/${workspace.slug}/settings`}
+                  className="btn-ghost ml-auto px-2 py-0.5 text-xs"
+                >
+                  Members
+                </Link>
+              </li>
+            ))}
+          </ul>
+
           <form action={createWorkspace} className="flex gap-2">
             <input
               name="name"
-              placeholder="Workspace name"
+              placeholder="New workspace name"
               className="field"
               required
             />
