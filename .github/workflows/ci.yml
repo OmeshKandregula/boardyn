@@ -20,6 +20,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
+      # Run the suite again from the other side of the date line. Date-only
+      # handling is meant to be timezone independent, and the only way to know
+      # is to actually be in another timezone.
+      - run: pnpm test
+        env:
+          TZ: Pacific/Auckland
       - run: pnpm build
         env:
           # The build only needs these to exist; no database is contacted.

@@ -1,8 +1,9 @@
 "use client";
 
-import { format, isPast, isToday } from "date-fns";
+import { format } from "date-fns";
 import { Avatar } from "@/components/Avatar";
 import { COLOR_CLASSES, type ColorName } from "@/lib/constants";
+import { dateOnlyForDisplay, isOverdue } from "@/lib/dates";
 import type { BoardProperty } from "@/db/schema";
 import type { CardData, Member } from "@/lib/queries";
 import { optionById, renderValue } from "./view-model";
@@ -31,8 +32,10 @@ export function CardTile({
     visibleProperties.includes(property.id),
   );
 
-  const due = card.dueAt ? new Date(card.dueAt) : null;
-  const overdue = due ? isPast(due) && !isToday(due) : false;
+  // Rendered from the calendar day, not the stored instant: a due date is the
+  // same day for both founders regardless of where either of them is.
+  const due = card.dueAt ? dateOnlyForDisplay(card.dueAt) : null;
+  const overdue = card.dueAt ? isOverdue(card.dueAt) : false;
 
   return (
     <article

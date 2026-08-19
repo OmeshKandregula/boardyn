@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { updateView } from "@/app/actions/boards";
+import { fromDateOnly, toDateOnly } from "@/lib/dates";
 import { Avatar } from "@/components/Avatar";
 import type { View } from "@/db/schema";
 import type { BoardBundle, CardData } from "@/lib/queries";
@@ -95,11 +96,11 @@ export function TableView({
                 <input
                   type="date"
                   className="field py-1 text-xs"
-                  value={card.dueAt ? card.dueAt.slice(0, 10) : ""}
+                  value={card.dueAt ? toDateOnly(card.dueAt) : ""}
                   onChange={(event) =>
                     mutations.patch(card.id, {
                       dueAt: event.target.value
-                        ? new Date(`${event.target.value}T09:00:00`).toISOString()
+                        ? fromDateOnly(event.target.value).toISOString()
                         : null,
                     })
                   }

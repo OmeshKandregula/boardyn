@@ -12,6 +12,7 @@ import {
   workspaces,
   type PropertyOption,
 } from "./schema";
+import { fromDateOnly, toDateOnly } from "../lib/dates";
 import { ids } from "../lib/ids";
 import { POSITION_STEP } from "../lib/positions";
 
@@ -116,10 +117,13 @@ async function main() {
       boardId,
       title,
       position: POSITION_STEP * (index + 1),
+      // Date-only values live at UTC midnight; see lib/dates.ts.
       dueAt:
         dueInDays === null
           ? null
-          : new Date(Date.now() + dueInDays * 86_400_000),
+          : fromDateOnly(
+              toDateOnly(new Date(Date.now() + dueInDays * 86_400_000)),
+            ),
       createdBy: user.id,
     });
     await db.insert(cardValues).values([

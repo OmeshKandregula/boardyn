@@ -5,6 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import { fetchCardDetail, type CardDetail } from "@/app/actions/card-detail";
 import { addComment } from "@/app/actions/cards";
 import { Avatar } from "@/components/Avatar";
+import { fromDateOnly, toDateOnly } from "@/lib/dates";
 import type { BoardBundle, CardData } from "@/lib/queries";
 import type { CardMutations } from "./BoardApp";
 import { PropertyEditor } from "./PropertyEditor";
@@ -45,7 +46,7 @@ export function CardDialog({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const dueValue = card.dueAt ? card.dueAt.slice(0, 10) : "";
+  const dueValue = card.dueAt ? toDateOnly(card.dueAt) : "";
 
   return (
     <div
@@ -85,7 +86,7 @@ export function CardDialog({
                 onChange={(event) =>
                   mutations.patch(card.id, {
                     dueAt: event.target.value
-                      ? new Date(`${event.target.value}T09:00:00`).toISOString()
+                      ? fromDateOnly(event.target.value).toISOString()
                       : null,
                   })
                 }

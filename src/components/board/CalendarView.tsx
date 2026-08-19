@@ -16,7 +16,6 @@ import {
   endOfMonth,
   endOfWeek,
   format,
-  isSameDay,
   isSameMonth,
   isToday,
   startOfMonth,
@@ -24,6 +23,7 @@ import {
   subMonths,
 } from "date-fns";
 import { AVATAR_CLASSES, type ColorName } from "@/lib/constants";
+import { localDateOnly, moveToDay, toDateOnly } from "@/lib/dates";
 import type { View } from "@/db/schema";
 import type { BoardBundle, CardData, ExternalEventData } from "@/lib/queries";
 import type { CardMutations } from "./BoardApp";
@@ -71,14 +71,13 @@ export function CalendarView({
     const card = cards.find((candidate) => candidate.id === cardId);
     if (!card) return;
 
-    // Keep the time of day if the card had one; only the date is being moved.
-    const target = new Date(dayIso.slice(4));
-    const existing = card.dueAt ? new Date(card.dueAt) : null;
-    if (existing && !card.allDay) {
-      target.setHours(existing.getHours(), existing.getMinutes(), 0, 0);
-    } else {
-      target.setHours(9, 0, 0, 0);
-    }
+    // Only the calendar date is being moved; a card with a real time of day
+    // keeps it rather than being reset to midnight.
+    const target = moveToDay(
+      new Date(dayIso.slice(4)),
+      card.dueAt,
+      card.allDay,
+    );
 
     mutations.patch(cardId, { dueAt: target.toISOString() });
   }
@@ -134,8 +133,8 @@ export function CalendarView({
               key={day.toISOString()}
               day={day}
               inMonth={isSameMonth(day, anchor)}
-              cards={scheduled.filter((card) =>
-                isSameDay(new Date(card.dueAt!), day),
+              cards={scheduled.filter(
+                (card) => toDateOnly(card.dueAt!) === localDateOnly(day),
               )}
               events={events.filter((event) => coversDay(event, day))}
               bundle={bundle}
@@ -235,9 +234,10 @@ function DayCell({
             ) as HTMLInputElement;
             const clean = input.value.trim();
             if (clean) {
-              const due = new Date(day);
-              due.setHours(9, 0, 0, 0);
-              mutations.create({ title: clean, dueAt: due.toISOString() });
+              mutations.create({
+                title: clean,
+                dueAt: moveToDay(day, null, true).toISOString(),
+              });
             }
             setComposing(false);
           }}

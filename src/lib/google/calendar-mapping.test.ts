@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { fromDateOnly, toDateOnly } from "@/lib/dates";
 import type { GoogleEvent } from "./client";
 import {
   CARD_MARKER,
@@ -235,14 +236,43 @@ describe("round trip", () => {
 
 describe("timezone boundary", () => {
   /**
-   * The gap task #3 exists to close. An all-day payload is built by slicing the
-   * UTC date out of the timestamp, but the UI creates due dates from local
-   * time: `new Date("2026-08-25T09:00:00")`. West of UTC that still lands on
-   * the 25th. In Auckland (UTC+13) it is 2026-08-24T20:00Z, and the card
-   * arrives on the calendar a day early.
+   * The bug task #3 existed to close. All-day payloads slice the UTC date out
+   * of the stored timestamp, and the UI used to build due dates from local
+   * time: `new Date("2026-08-25T09:00:00")`. West of UTC that still landed on
+   * the 25th, so it looked fine from here. In Auckland it is
+   * 2026-08-24T20:00Z, and the card arrived on the calendar a day early.
    *
-   * Left as a todo rather than a passing assertion, because writing a test that
-   * asserts the current behaviour would lock the bug in.
+   * Date-only values are now stored at UTC midnight by fromDateOnly, which is
+   * what makes the slice safe from anywhere.
    */
-  it.todo("keeps an all-day card on its own day regardless of the viewer's timezone");
+  it("keeps a card on its own day whatever hour the timestamp carries", () => {
+    for (const hour of [0, 9, 13, 20, 23]) {
+      const stamped = new Date(Date.UTC(2026, 7, 25, hour, 30));
+      expect(toDateOnly(stamped)).toBe("2026-08-25");
+    }
+  });
+
+  it("builds the same payload from a date string regardless of local zone", () => {
+    const payload = buildEventPayload(
+      card({ dueAt: fromDateOnly("2026-08-25") }),
+      "Roadmap",
+      APP_URL,
+    );
+    expect(payload.start.date).toBe("2026-08-25");
+    expect(payload.end.date).toBe("2026-08-26");
+  });
+
+  it("round trips a date-only value through the calendar unchanged", () => {
+    const payload = buildEventPayload(
+      card({ dueAt: fromDateOnly("2026-08-25") }),
+      "Roadmap",
+      APP_URL,
+    );
+    const window = parseEventWindow({
+      id: "evt_1",
+      start: { date: payload.start.date },
+      end: { date: payload.end.date },
+    })!;
+    expect(toDateOnly(cardDatesFromWindow(window).dueAt)).toBe("2026-08-25");
+  });
 });
