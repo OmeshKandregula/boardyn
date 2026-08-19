@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { googleAccounts, type GoogleAccount } from "@/db/schema";
+import { decryptSecret, encryptSecret } from "@/lib/secrets";
 
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -88,8 +89,10 @@ export async function fetchUserInfo(accessToken: string) {
  * column directly.
  */
 export async function accessTokenFor(account: GoogleAccount): Promise<string> {
+  // Tokens are encrypted at rest; rows written before that was true decrypt to
+  // themselves. See lib/secrets.ts.
   if (account.expiresAt.getTime() - Date.now() > 60_000) {
-    return account.accessToken;
+    return decryptSecret(account.accessToken);
   }
 
   const response = await fetch(TOKEN_URL, {
@@ -98,7 +101,7 @@ export async function accessTokenFor(account: GoogleAccount): Promise<string> {
     body: new URLSearchParams({
       client_id: process.env.GOOGLE_CLIENT_ID!,
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      refresh_token: account.refreshToken,
+      refresh_token: decryptSecret(account.refreshToken),
       grant_type: "refresh_token",
     }),
   });
@@ -116,12 +119,15 @@ export async function accessTokenFor(account: GoogleAccount): Promise<string> {
   const token = (await response.json()) as TokenResponse;
   const expiresAt = new Date(Date.now() + token.expires_in * 1000);
 
+  const encrypted = encryptSecret(token.access_token);
   await db
     .update(googleAccounts)
-    .set({ accessToken: token.access_token, expiresAt, lastSyncError: null })
+    .set({ accessToken: encrypted, expiresAt, lastSyncError: null })
     .where(eq(googleAccounts.id, account.id));
 
-  account.accessToken = token.access_token;
+  // Keep the in-memory copy consistent with the row, encrypted form included,
+  // so a caller reusing this object does not double-decrypt or see stale data.
+  account.accessToken = encrypted;
   account.expiresAt = expiresAt;
   return token.access_token;
 }

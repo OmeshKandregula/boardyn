@@ -7,6 +7,7 @@ import { googleAccounts } from "@/db/schema";
 import { exchangeCode, fetchUserInfo } from "@/lib/google/client";
 import { syncAccount } from "@/lib/google/pull";
 import { ids } from "@/lib/ids";
+import { decryptSecret, encryptSecret } from "@/lib/secrets";
 import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -44,9 +45,13 @@ export async function GET(request: Request) {
       .where(eq(googleAccounts.userId, user.id))
       .limit(1);
 
-    // Reconnecting without prompt=consent can return no refresh token. Keeping
-    // the previous one is what makes a re-auth non-destructive.
-    const refreshToken = token.refresh_token ?? existing?.refreshToken;
+    // Reconnecting without prompt=consent can return no refresh token, so the
+    // stored one carries over: that is what makes a re-auth non-destructive.
+    // It comes back out of the row encrypted, hence the decrypt before the
+    // re-encrypt below.
+    const refreshToken =
+      token.refresh_token ??
+      (existing ? decryptSecret(existing.refreshToken) : undefined);
     if (!refreshToken) {
       return NextResponse.redirect(
         new URL("/settings?error=no_refresh_token", request.url),
@@ -61,8 +66,8 @@ export async function GET(request: Request) {
         userId: user.id,
         googleUserId: profile.sub,
         email: profile.email,
-        accessToken: token.access_token,
-        refreshToken,
+        accessToken: encryptSecret(token.access_token),
+        refreshToken: encryptSecret(refreshToken),
         expiresAt,
         syncEnabled: true,
         lastSyncError: null,
@@ -72,8 +77,8 @@ export async function GET(request: Request) {
         set: {
           googleUserId: profile.sub,
           email: profile.email,
-          accessToken: token.access_token,
-          refreshToken,
+          accessToken: encryptSecret(token.access_token),
+          refreshToken: encryptSecret(refreshToken),
           expiresAt,
           syncEnabled: true,
           lastSyncError: null,
