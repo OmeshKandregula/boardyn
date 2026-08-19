@@ -24,7 +24,7 @@ export function AppShell({
 }) {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-4 border-b border-[color:var(--color-line)] bg-[color:var(--color-canvas)]/95 px-4 backdrop-blur">
+      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-[color:var(--color-line)] bg-[color:var(--color-canvas)]/95 px-3 backdrop-blur sm:gap-4 sm:px-4">
         <Link href="/" aria-label="Boardyn home">
           <Wordmark />
         </Link>
@@ -62,16 +62,27 @@ export function AppShell({
             </div>
           ) : null}
 
-          <Link href="/meetings" className="btn-ghost px-2 py-1.5 text-sm">
+          {/* whitespace-nowrap because "Sign out" was breaking across two
+              lines inside a fixed-height header. */}
+          <Link
+            href="/meetings"
+            className="btn-ghost whitespace-nowrap px-2 py-1.5 text-sm"
+          >
             Meetings
           </Link>
 
-          <Link href="/settings" className="btn-ghost px-2 py-1.5 text-sm">
+          <Link
+            href="/settings"
+            className="btn-ghost whitespace-nowrap px-2 py-1.5 text-sm"
+          >
             Settings
           </Link>
 
           <form action={signOut}>
-            <button className="btn-ghost px-2 py-1.5 text-sm" type="submit">
+            <button
+              className="btn-ghost whitespace-nowrap px-2 py-1.5 text-sm"
+              type="submit"
+            >
               Sign out
             </button>
           </form>

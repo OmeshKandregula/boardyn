@@ -57,7 +57,7 @@ export function ViewBar({
           {bundle.board.title}
         </h1>
 
-        <div className="flex items-center gap-1">
+        <div className="thin-scroll flex max-w-full items-center gap-1 overflow-x-auto">
           {bundle.views.map((candidate) => (
             <button
               key={candidate.id}
@@ -105,7 +105,10 @@ export function ViewBar({
           </div>
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        {/* Wraps rather than running off the side: on a phone this row is
+            wider than the viewport, and without wrapping it pushed the whole
+            document sideways rather than just the board columns. */}
+        <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
           <span className="text-xs text-[color:var(--color-ink-faint)]">
             {cardCount} card{cardCount === 1 ? "" : "s"}
           </span>

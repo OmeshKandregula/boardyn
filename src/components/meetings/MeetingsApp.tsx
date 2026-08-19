@@ -28,6 +28,7 @@ export function MeetingsApp({
   currentUserId,
   workspaceSlug,
   connected,
+  explicitSelection,
 }: {
   meetings: MeetingSummary[];
   detail: MeetingDetail | null;
@@ -35,6 +36,7 @@ export function MeetingsApp({
   currentUserId: string;
   workspaceSlug: string;
   connected: boolean;
+  explicitSelection: boolean;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -58,7 +60,14 @@ export function MeetingsApp({
 
   return (
     <div className="flex min-h-0 flex-1">
-      <aside className="thin-scroll w-72 shrink-0 overflow-y-auto border-r border-[color:var(--color-line)]">
+      {/* Two panes side by side once there is room for both. Below that the
+          list and the note take turns, because a 200px column of one-word
+          lines is not a reading experience. */}
+      <aside
+        className={`thin-scroll w-full shrink-0 overflow-y-auto border-r border-[color:var(--color-line)] md:block md:w-72 ${
+          explicitSelection ? "hidden" : "block"
+        }`}
+      >
         <h1 className="px-4 py-3 text-sm font-semibold">Meetings</h1>
         <ul>
           {meetings.map((meeting) => {
@@ -99,14 +108,24 @@ export function MeetingsApp({
         </ul>
       </aside>
 
-      <div className="thin-scroll min-w-0 flex-1 overflow-y-auto">
+      <div
+        className={`thin-scroll min-w-0 flex-1 overflow-y-auto md:block ${
+          explicitSelection ? "block" : "hidden md:block"
+        }`}
+      >
         {!detail ? (
           <p className="p-8 text-sm text-[color:var(--color-ink-faint)]">
             Pick a meeting.
           </p>
         ) : (
-          <article className="mx-auto max-w-3xl px-6 py-6">
+          <article className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-6">
             <header className="mb-5">
+              <Link
+                href={`/meetings?workspace=${workspaceSlug}`}
+                className="mb-3 inline-block text-xs text-[color:var(--color-ink-muted)] md:hidden"
+              >
+                ← All meetings
+              </Link>
               <h2 className="text-xl font-semibold tracking-tight">
                 {detail.title}
               </h2>
@@ -164,7 +183,7 @@ export function MeetingsApp({
             </header>
 
             <section className="panel mb-6 p-4">
-              <div className="mb-3 flex items-baseline justify-between">
+              <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                 <h3 className="text-sm font-semibold">Action items</h3>
                 {boards.length > 1 ? (
                   <label className="flex items-center gap-1.5 text-xs text-[color:var(--color-ink-muted)]">
@@ -197,9 +216,10 @@ export function MeetingsApp({
                 {open.map((item) => (
                   <li
                     key={item.id}
-                    className="flex items-start gap-2 rounded-lg px-1.5 py-1.5 hover:bg-white/[0.03]"
+                    className="flex flex-col gap-1.5 rounded-lg px-1.5 py-1.5 hover:bg-white/[0.03] sm:flex-row sm:items-start sm:gap-2"
                   >
                     <span className="min-w-0 flex-1 text-sm">{item.text}</span>
+                    <span className="flex shrink-0 items-center gap-1">
                     <button
                       className="btn-outline shrink-0 px-2 py-0.5 text-xs"
                       disabled={!boardId}
@@ -222,6 +242,7 @@ export function MeetingsApp({
                     >
                       Dismiss
                     </button>
+                    </span>
                   </li>
                 ))}
               </ul>

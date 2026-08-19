@@ -62,6 +62,10 @@ export default async function MeetingsPage({
         currentUserId={user.id}
         workspaceSlug={workspace.slug}
         connected={account !== null}
+        // On a phone the list and the note cannot share a screen, so one or
+        // the other is shown. Whether a meeting was actually asked for, rather
+        // than defaulted to, is what decides which.
+        explicitSelection={Boolean(query.meeting)}
       />
     </AppShell>
   );

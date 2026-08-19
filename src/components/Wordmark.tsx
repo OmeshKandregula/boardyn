@@ -28,7 +28,11 @@ export function Wordmark({ compact = false }: { compact?: boolean }) {
         </svg>
       </span>
       {compact ? null : (
-        <span className="text-base font-semibold tracking-tight">Boardyn</span>
+        // Hidden on a phone: the header has to fit navigation and a sign-out
+        // button, and the mark alone identifies the app well enough.
+        <span className="hidden text-base font-semibold tracking-tight sm:inline">
+          Boardyn
+        </span>
       )}
     </div>
   );
