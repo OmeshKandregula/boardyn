@@ -57,20 +57,36 @@ describe("dateOnlyForDisplay", () => {
 });
 
 describe("overdue", () => {
+  /**
+   * "Overdue" is asked from where the viewer is standing, so `now` is built as
+   * local noon on the 25th rather than a fixed UTC instant. An earlier version
+   * of these tests pinned 12:00Z and only passed west of UTC: at 12:00Z it is
+   * already the 26th in Auckland, where a card due the 25th genuinely is
+   * overdue. The function was right and the test was wrong.
+   */
+  const localNoon = (year: number, month: number, day: number) =>
+    new Date(year, month - 1, day, 12, 0, 0);
+
   it("treats today as not overdue", () => {
-    const now = new Date("2026-08-25T12:00:00.000Z");
+    const now = localNoon(2026, 8, 25);
     expect(isOverdue(fromDateOnly("2026-08-25"), now)).toBe(false);
     expect(isDueToday(fromDateOnly("2026-08-25"), now)).toBe(true);
   });
 
   it("treats yesterday as overdue", () => {
-    const now = new Date("2026-08-25T12:00:00.000Z");
-    expect(isOverdue(fromDateOnly("2026-08-24"), now)).toBe(true);
+    expect(isOverdue(fromDateOnly("2026-08-24"), localNoon(2026, 8, 25))).toBe(true);
   });
 
   it("treats tomorrow as not overdue", () => {
-    const now = new Date("2026-08-25T12:00:00.000Z");
-    expect(isOverdue(fromDateOnly("2026-08-26"), now)).toBe(false);
+    expect(isOverdue(fromDateOnly("2026-08-26"), localNoon(2026, 8, 25))).toBe(false);
+  });
+
+  it("answers from the viewer's calendar, not UTC", () => {
+    // Same instant, two zones, two correct answers. This is the behaviour the
+    // old test accidentally asserted away.
+    process.env.TZ = "Pacific/Auckland";
+    const instant = new Date("2026-08-25T12:00:00.000Z"); // already the 26th there
+    expect(isOverdue(fromDateOnly("2026-08-25"), instant)).toBe(true);
   });
 });
 
