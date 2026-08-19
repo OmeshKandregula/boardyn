@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   DndContext,
+  KeyboardSensor,
   PointerSensor,
   useDraggable,
   useDroppable,
@@ -50,6 +51,12 @@ export function CalendarView({
   const [anchor, setAnchor] = useState(() => new Date());
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    // Same reasoning as the board: rescheduling by dragging should not be the
+    // only way to reschedule. Space picks a card up, arrows move it across the
+    // grid, Space drops it. Enter is left to open the card.
+    useSensor(KeyboardSensor, {
+      keyboardCodes: { start: ["Space"], cancel: ["Escape"], end: ["Space"] },
+    }),
   );
 
   const days = useMemo(() => {
@@ -263,21 +270,32 @@ function CalendarCard({ card, onOpen }: { card: CardData; onOpen: () => void }) 
     useDraggable({ id: card.id });
 
   return (
-    <div
+    // A button rather than a div: these were not reachable by keyboard at all,
+    // so a calendar of scheduled work was invisible to anyone not using a mouse.
+    <button
+      type="button"
       ref={setNodeRef}
       style={
         transform
           ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
           : undefined
       }
-      {...listeners}
-      {...attributes}
       onClick={onOpen}
-      className={`mb-1 cursor-pointer truncate rounded-md border border-[color:var(--color-line)] bg-[color:var(--color-surface-raised)] px-1.5 py-1 text-[11px] hover:border-indigo-500/40 ${
+      className={`mb-1 block w-full truncate rounded-md border border-[color:var(--color-line)] bg-[color:var(--color-surface-raised)] px-1.5 py-1 text-left text-[11px] hover:border-indigo-500/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/70 ${
         isDragging ? "opacity-60 shadow-lg" : ""
       }`}
+      {...attributes}
+      {...listeners}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          onOpen();
+          return;
+        }
+        listeners?.onKeyDown?.(event);
+      }}
     >
       {card.title}
-    </div>
+    </button>
   );
 }

@@ -4,16 +4,19 @@ import { useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
+  KeyboardSensor,
   PointerSensor,
   closestCorners,
   useDroppable,
   useSensor,
   useSensors,
+  type Announcements,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
+  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -49,9 +52,55 @@ export function KanbanView({
 
   // A few pixels of travel before a drag starts, so a click to open a card is
   // not swallowed by the drag sensor.
+  //
+  // The keyboard sensor is not a nicety: moving a card between columns is the
+  // central act of this app, and without it that act requires a mouse. Space
+  // picks a card up, the arrow keys move it, Space drops it, Escape cancels.
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+      // dnd-kit treats Enter as a drag activator as well as Space. On a board
+      // that steals the key people expect to open a card with, so dragging is
+      // Space only and Enter is left to do the obvious thing.
+      keyboardCodes: {
+        start: ["Space"],
+        cancel: ["Escape"],
+        end: ["Space"],
+      },
+    }),
   );
+
+  /**
+   * Spoken to screen readers as a drag proceeds. dnd-kit ships defaults, but
+   * they talk about positions in a list; on a kanban board the column is the
+   * thing that matters, so these say which one you are over.
+   */
+  const announcements: Announcements = {
+    onDragStart: ({ active }) => {
+      const card = cards.find((candidate) => candidate.id === active.id);
+      return `Picked up ${card?.title ?? "card"}. Use the arrow keys to move it, space to drop, escape to cancel.`;
+    },
+    onDragOver: ({ active, over }) => {
+      const card = cards.find((candidate) => candidate.id === active.id);
+      const groupId = (over?.data.current as { groupId?: string } | undefined)?.groupId;
+      const group = groups.find((candidate) => candidate.id === groupId);
+      if (!group) return undefined;
+      return `${card?.title ?? "Card"} is over ${group.name}.`;
+    },
+    onDragEnd: ({ active, over }) => {
+      const card = cards.find((candidate) => candidate.id === active.id);
+      const groupId = (over?.data.current as { groupId?: string } | undefined)?.groupId;
+      const group = groups.find((candidate) => candidate.id === groupId);
+      return group
+        ? `Dropped ${card?.title ?? "card"} in ${group.name}.`
+        : `Dropped ${card?.title ?? "card"}.`;
+    },
+    onDragCancel: ({ active }) => {
+      const card = cards.find((candidate) => candidate.id === active.id);
+      return `Cancelled. ${card?.title ?? "The card"} was returned to where it started.`;
+    },
+  };
 
   function handleDragEnd(event: DragEndEvent) {
     setDraggingId(null);
@@ -86,6 +135,7 @@ export function KanbanView({
   return (
     <DndContext
       sensors={sensors}
+      accessibility={{ announcements }}
       collisionDetection={closestCorners}
       onDragStart={(event: DragStartEvent) => setDraggingId(String(event.active.id))}
       onDragCancel={() => setDraggingId(null)}
@@ -254,12 +304,29 @@ function SortableCard({
     useSortable({ id: card.id, data: { groupId, cardId: card.id } });
 
   return (
-    <div
+    // A button, not a div: dnd-kit's keyboard sensor needs the handle to be
+    // focusable and to announce itself, and Enter should open the card the way
+    // clicking it does. The tile inside carries the visuals only.
+    <button
+      type="button"
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      className={hidden ? "dragging-source" : undefined}
+      className={`w-full rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/70 ${
+        hidden ? "dragging-source" : ""
+      }`}
       {...attributes}
       {...listeners}
+      // Spread last, and calling through, because the listeners object carries
+      // its own onKeyDown: putting this above the spread meant it was silently
+      // replaced and Enter did nothing at all.
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          mutations.open(card.id);
+          return;
+        }
+        listeners?.onKeyDown?.(event);
+      }}
     >
       <CardTile
         card={card}
@@ -268,6 +335,6 @@ function SortableCard({
         members={bundle.members}
         onOpen={() => mutations.open(card.id)}
       />
-    </div>
+    </button>
   );
 }

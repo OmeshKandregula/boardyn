@@ -71,6 +71,9 @@ changing what the board groups by is a dropdown rather than a data migration.
   in Postgres.
 - **Live updates.** Both people see a drag land within a beat, over
   server-sent events fed by Postgres `LISTEN`/`NOTIFY`.
+- **Usable without a mouse.** Tab to a card, space to pick it up, arrows to
+  move it, space to drop, escape to cancel, enter to open. Screen readers are
+  told which column the card is over.
 - **Google Calendar, two ways.** Assigned cards with dates appear on your
   calendar; moving the event moves the card. Everyone's events draw behind the
   calendar view so you can see where there is room.
